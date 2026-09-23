@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/store_detail_providers.dart';
-
-/// Shows the rating dialog, returns true if the user submitted a rating
-/// (so the caller can invalidate the store's average rating), false if
-/// skipped. Awaited before actually popping the store detail screen.
 Future<bool> showStoreRatingDialog(BuildContext context, {required String storeId, required String storeName}) async {
   return await showDialog<bool>(
         context: context,

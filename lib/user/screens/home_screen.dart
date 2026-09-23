@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/home_providers.dart';
 import '../providers/profile_providers.dart';
+import '../providers/notifications_providers.dart';
 import 'sign_in_screen.dart';
+import 'notifications_screen.dart';
 
 class UserHomeScreen extends ConsumerWidget {
   const UserHomeScreen({Key? key}) : super(key: key);
@@ -131,11 +133,41 @@ class UserHomeScreen extends ConsumerWidget {
                   const SizedBox(width: 10),
                   const Text('EcoWise', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
                   const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.18), borderRadius: BorderRadius.circular(14)),
-                    child: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 22),
-                  ),
+                  Consumer(builder: (context, ref, _) {
+                    final unreadAsync = ref.watch(unreadCountProvider);
+                    final unreadCount = unreadAsync.asData?.value ?? 0;
+                    return GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+                      ),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.18), borderRadius: BorderRadius.circular(14)),
+                            child: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 22),
+                          ),
+                          if (unreadCount > 0)
+                            Positioned(
+                              top: -2,
+                              right: -2,
+                              child: Container(
+                                width: 16,
+                                height: 16,
+                                decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.redAccent),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  unreadCount > 9 ? '9+' : '$unreadCount',
+                                  style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  }),
                   const SizedBox(width: 12),
                   GestureDetector(
                     onTap: () => openProfileDialog(context, ref, profileAsync.value),

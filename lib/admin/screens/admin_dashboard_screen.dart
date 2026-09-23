@@ -6,10 +6,15 @@ import 'add_store_screen.dart';
 class AdminDashboardScreen extends ConsumerWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
 
-  static const Color darkText = Color(0xFF2F4F4F);
-  static const Color vibrantGreen = Color(0xFF24AC5D);
-  static const Color darkTeal = Color(0xFF1C7043);
-  static const Color cardFill = Color(0xFFF3EEDD);
+  static const Color pureWhite = Colors.white;
+  static const Color textDark = Color(0xFF1A1A1A);
+  static const Color textGray = Color(0xFF6B6B6B);
+  static const Color primaryGreen = Color(0xFF1B7A43);
+  static const Color lightGreenBg = Color(0xFFE7F4EC);
+  static const Color borderGray = Color(0xFFE0E0E0);
+  static const Color sectionFill = Color(0xFFF7F8F6);
+
+  static const activityIconColors = [primaryGreen, Color(0xFF2FA362), Color(0xFF0E8A6E), Color(0xFF3E9B5E)];
 
   String buildGreeting() {
     final hour = DateTime.now().hour;
@@ -48,7 +53,7 @@ class AdminDashboardScreen extends ConsumerWidget {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFFFDF9F0),
+      backgroundColor: pureWhite,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -60,41 +65,36 @@ class AdminDashboardScreen extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(color: borderGray, borderRadius: BorderRadius.circular(4)),
+                  ),
+                ),
+                const SizedBox(height: 18),
                 const Text(
                   'Select store',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: darkText,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDark),
                 ),
                 const SizedBox(height: 12),
                 for (final store in stores)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: vibrantGreen.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.storefront_rounded, color: vibrantGreen, size: 20),
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(color: lightGreenBg, borderRadius: BorderRadius.circular(12)),
+                      child: const Icon(Icons.storefront_rounded, color: primaryGreen, size: 20),
                     ),
-                    title: Text(
-                      store.name,
-                      style: const TextStyle(color: darkText, fontWeight: FontWeight.w600),
-                    ),
+                    title: Text(store.name, style: const TextStyle(color: textDark, fontWeight: FontWeight.w600)),
+                    trailing: const Icon(Icons.chevron_right_rounded, color: textGray),
                     onTap: () {
                       Navigator.pop(context);
                       // TODO: Navigate to the Add product form for
                       // this store.
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Add product form for ${store.name} goes here',
-                          ),
-                        ),
+                        SnackBar(content: Text('Add product form for ${store.name} goes here')),
                       );
                     },
                   ),
@@ -114,7 +114,7 @@ class AdminDashboardScreen extends ConsumerWidget {
     final adminName = ref.watch(adminDisplayNameProvider);
 
     return RefreshIndicator(
-      color: vibrantGreen,
+      color: primaryGreen,
       onRefresh: () async {
         ref.invalidate(dashboardStatsProvider);
         ref.invalidate(storesOverviewProvider);
@@ -123,18 +123,17 @@ class AdminDashboardScreen extends ConsumerWidget {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          // ── Header: greeting on a gradient hero, same vibrantGreen
-          // (just two opacity steps of it — no new colors introduced).
+          // ── Hero header with a floating live summary card ──
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [vibrantGreen, vibrantGreen.withOpacity(0.82)],
+                colors: [primaryGreen, Color(0xFF2FA362)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,12 +141,9 @@ class AdminDashboardScreen extends ConsumerWidget {
                 Row(
                   children: [
                     Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.18),
-                      ),
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.18)),
                       child: const Icon(Icons.admin_panel_settings_rounded, color: Colors.white, size: 24),
                     ),
                     const SizedBox(width: 12),
@@ -157,45 +153,55 @@ class AdminDashboardScreen extends ConsumerWidget {
                         children: [
                           Text(
                             '${buildGreeting()}, ${adminName ?? 'Admin'}',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                           ),
                           Text(
                             "Here's your EcoWise overview.",
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.white.withOpacity(0.85),
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.85), fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 22),
+                statsAsync.when(
+                  loading: () => const SizedBox(height: 68),
+                  error: (e, s) => const SizedBox.shrink(),
+                  data: (stats) => Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 18, offset: const Offset(0, 8))],
+                    ),
+                    child: Row(
+                      children: [
+                        _heroStatCell(icon: Icons.storefront_rounded, label: 'Stores', value: '${stats.storeCount}'),
+                        Container(width: 1, height: 38, color: borderGray),
+                        _heroStatCell(icon: Icons.inventory_2_outlined, label: 'Products', value: '${stats.productCount}'),
+                        Container(width: 1, height: 38, color: borderGray),
+                        _heroStatCell(icon: Icons.people_outline_rounded, label: 'Users', value: '${stats.userCount}'),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
 
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 statsAsync.when(
                   loading: () => const Padding(
                     padding: EdgeInsets.symmetric(vertical: 32),
-                    child: Center(
-                      child: CircularProgressIndicator(color: vibrantGreen),
-                    ),
+                    child: Center(child: CircularProgressIndicator(color: primaryGreen)),
                   ),
-                  error: (error, stack) => const Text(
-                    'Could not load dashboard stats.',
-                    style: TextStyle(color: darkText),
-                  ),
+                  error: (error, stack) => const Text('Could not load dashboard stats.', style: TextStyle(color: textDark)),
                   data: (stats) => GridView.count(
                     crossAxisCount: 2,
                     shrinkWrap: true,
@@ -204,39 +210,16 @@ class AdminDashboardScreen extends ConsumerWidget {
                     crossAxisSpacing: 14,
                     childAspectRatio: 1.65,
                     children: [
-                      buildStatCard(
-                        icon: Icons.storefront_rounded,
-                        label: 'Stores',
-                        value: '${stats.storeCount}',
-                      ),
-                      buildStatCard(
-                        icon: Icons.inventory_2_outlined,
-                        label: 'Products',
-                        value: '${stats.productCount}',
-                      ),
-                      buildStatCard(
-                        icon: Icons.people_outline_rounded,
-                        label: 'Users',
-                        value: '${stats.userCount}',
-                      ),
-                      buildStatCard(
-                        icon: Icons.qr_code_scanner_rounded,
-                        label: 'Scans',
-                        value: '${stats.scanCount}',
-                      ),
+                      buildStatCard(icon: Icons.storefront_rounded, label: 'Stores', value: '${stats.storeCount}'),
+                      buildStatCard(icon: Icons.inventory_2_outlined, label: 'Products', value: '${stats.productCount}'),
+                      buildStatCard(icon: Icons.people_outline_rounded, label: 'Users', value: '${stats.userCount}'),
+                      buildStatCard(icon: Icons.qr_code_scanner_rounded, label: 'Scans', value: '${stats.scanCount}'),
                     ],
                   ),
                 ),
 
-                const SizedBox(height: 28),
-                const Text(
-                  'Quick actions',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: darkText,
-                  ),
-                ),
+                const SizedBox(height: 30),
+                const Text('Quick actions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -266,27 +249,15 @@ class AdminDashboardScreen extends ConsumerWidget {
                   ],
                 ),
 
-                const SizedBox(height: 28),
-                const Text(
-                  'Recent activity',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: darkText,
-                  ),
-                ),
+                const SizedBox(height: 30),
+                const Text('Recent activity', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
                 const SizedBox(height: 12),
                 activityAsync.when(
                   loading: () => const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Center(
-                      child: CircularProgressIndicator(color: vibrantGreen),
-                    ),
+                    child: Center(child: CircularProgressIndicator(color: primaryGreen)),
                   ),
-                  error: (error, stack) => const Text(
-                    'Could not load recent activity.',
-                    style: TextStyle(color: darkText),
-                  ),
+                  error: (error, stack) => const Text('Could not load recent activity.', style: TextStyle(color: textDark)),
                   data: (activities) {
                     if (activities.isEmpty) {
                       return buildEmptyState(
@@ -296,33 +267,28 @@ class AdminDashboardScreen extends ConsumerWidget {
                     }
                     return Column(
                       children: [
-                        for (final activity in activities)
+                        for (final entry in activities.asMap().entries)
                           Container(
                             margin: const EdgeInsets.only(bottom: 12),
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: cardFill,
+                              color: pureWhite,
                               borderRadius: BorderRadius.circular(18),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: darkTeal.withOpacity(0.06),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
+                              border: Border.all(color: borderGray),
+                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 3))],
                             ),
                             child: Row(
                               children: [
                                 Container(
                                   width: 42,
                                   height: 42,
-                                  decoration: const BoxDecoration(
+                                  decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: Colors.white,
+                                    color: activityIconColors[entry.key % activityIconColors.length].withOpacity(0.12),
                                   ),
                                   child: Icon(
-                                    iconForActivity(activity.type),
-                                    color: darkTeal,
+                                    iconForActivity(entry.value.type),
+                                    color: activityIconColors[entry.key % activityIconColors.length],
                                     size: 20,
                                   ),
                                 ),
@@ -331,31 +297,13 @@ class AdminDashboardScreen extends ConsumerWidget {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        activity.title,
-                                        style: const TextStyle(
-                                          color: darkText,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      if (activity.subtitle != null)
-                                        Text(
-                                          activity.subtitle!,
-                                          style: const TextStyle(
-                                            color: darkTeal,
-                                            fontSize: 13,
-                                          ),
-                                        ),
+                                      Text(entry.value.title, style: const TextStyle(color: textDark, fontWeight: FontWeight.w600)),
+                                      if (entry.value.subtitle != null)
+                                        Text(entry.value.subtitle!, style: const TextStyle(color: textGray, fontSize: 13)),
                                     ],
                                   ),
                                 ),
-                                Text(
-                                  activity.timeAgo,
-                                  style: TextStyle(
-                                    color: darkTeal.withOpacity(0.7),
-                                    fontSize: 12,
-                                  ),
-                                ),
+                                Text(entry.value.timeAgo, style: TextStyle(color: textGray.withOpacity(0.7), fontSize: 12)),
                               ],
                             ),
                           ),
@@ -371,45 +319,47 @@ class AdminDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget buildEmptyState({required IconData icon, required String message}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
-      decoration: BoxDecoration(
-        color: cardFill,
-        borderRadius: BorderRadius.circular(18),
-      ),
+  Widget _heroStatCell({required IconData icon, required String label, required String value}) {
+    return Expanded(
       child: Column(
         children: [
-          Icon(icon, color: darkTeal.withOpacity(0.6), size: 30),
-          const SizedBox(height: 10),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: TextStyle(color: darkTeal.withOpacity(0.8), fontSize: 13),
-          ),
+          Icon(icon, color: primaryGreen, size: 20),
+          const SizedBox(height: 6),
+          Text(value, style: const TextStyle(color: textDark, fontSize: 17, fontWeight: FontWeight.bold)),
+          Text(label, style: const TextStyle(color: textGray, fontSize: 11, fontWeight: FontWeight.w500)),
         ],
       ),
     );
   }
 
-  Widget buildStatCard({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
+  Widget buildEmptyState({required IconData icon, required String message}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 16),
+      decoration: BoxDecoration(color: sectionFill, borderRadius: BorderRadius.circular(20)),
+      child: Column(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: lightGreenBg),
+            child: Icon(icon, color: primaryGreen.withOpacity(0.7), size: 26),
+          ),
+          const SizedBox(height: 12),
+          Text(message, textAlign: TextAlign.center, style: TextStyle(color: textGray.withOpacity(0.85), fontSize: 13)),
+        ],
+      ),
+    );
+  }
+
+  Widget buildStatCard({required IconData icon, required String label, required String value}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: cardFill,
+        color: pureWhite,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: darkTeal.withOpacity(0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        border: Border.all(color: borderGray),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 3))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -417,33 +367,14 @@ class AdminDashboardScreen extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: vibrantGreen.withOpacity(0.14),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: vibrantGreen, size: 18),
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(color: lightGreenBg, borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, color: primaryGreen, size: 16),
           ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: darkText,
-              height: 1.1,
-            ),
-          ),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: darkTeal,
-              fontWeight: FontWeight.w500,
-              height: 1.1,
-            ),
-          ),
+          const SizedBox(height: 6),
+          Text(value, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: textDark, height: 1.1)),
+          Text(label, style: const TextStyle(fontSize: 11.5, color: textGray, fontWeight: FontWeight.w500, height: 1.1)),
         ],
       ),
     );
@@ -456,41 +387,58 @@ class AdminDashboardScreen extends ConsumerWidget {
     required VoidCallback onTap,
   }) {
     return SizedBox(
-      height: 56,
+      height: 58,
       child: filled
-          ? ElevatedButton.icon(
+          ? ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: vibrantGreen,
+                backgroundColor: primaryGreen,
                 elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
               ),
               onPressed: onTap,
-              icon: const Icon(Icons.add, color: Colors.white, size: 20),
-              label: Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(9)),
+                    child: Icon(icon, color: Colors.white, size: 16),
+                  ),
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(label,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
+                  ),
+                ],
               ),
             )
-          : OutlinedButton.icon(
+          : OutlinedButton(
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: darkTeal, width: 1.4),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
+                backgroundColor: pureWhite,
+                side: const BorderSide(color: borderGray, width: 1.2),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
               ),
               onPressed: onTap,
-              icon: const Icon(Icons.add, color: darkTeal, size: 20),
-              label: Text(
-                label,
-                style: const TextStyle(
-                  color: darkTeal,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(color: lightGreenBg, borderRadius: BorderRadius.circular(9)),
+                    child: Icon(icon, color: primaryGreen, size: 16),
+                  ),
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(label,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: textDark, fontWeight: FontWeight.w700, fontSize: 13)),
+                  ),
+                ],
               ),
             ),
     );

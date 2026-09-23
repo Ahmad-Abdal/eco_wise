@@ -32,11 +32,6 @@ class ChatNotifier extends Notifier<ChatState> {
   ChatState build() => const ChatState();
 
   SupabaseClient get supabase => Supabase.instance.client;
-
-  /// Pulls a compact real-data snapshot from Supabase to ground the
-  /// model's answers. Capped to keep the prompt small — fine for a
-  /// catalog this size; a larger catalog would need real retrieval
-  /// (embeddings/search) instead of dumping everything in-context.
   Future<String> buildContext() async {
     final products = await supabase
         .from('products')

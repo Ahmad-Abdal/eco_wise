@@ -1,17 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../admin/models/product.dart';
+import 'personalized_products_provider.dart';
 
-/// Top products ordered by eco score — stands in for "recommendations"
-/// until a real personalization/interaction-based ranking exists.
-final recommendedProductsProvider = FutureProvider.autoDispose<List<Product>>((ref) async {
-  final supabase = Supabase.instance.client;
-  final data = await supabase
-      .from('products')
-      .select()
-      .order('eco_score', ascending: false)
-      .limit(6);
-  return (data as List).map((e) => Product.fromMap(e)).toList();
+/// Personalized recommendations — scores products against the user's
+/// onboarding preferences (categories, sustainability priorities,
+/// price band). Falls back to a plain eco-score ranking automatically
+/// when the user skipped onboarding or set no preferences.
+final recommendedProductsProvider = FutureProvider.autoDispose<List<ScoredProduct>>((ref) async {
+  return fetchPersonalizedProducts(limit: 6);
 });
 
 /// User's own eco score. Returns null until the interaction-tracking

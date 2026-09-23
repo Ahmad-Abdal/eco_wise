@@ -5,6 +5,7 @@ import '../../core/providers/auth_providers.dart';
 import 'sign_up_screen.dart';
 import 'user_home_shell.dart';
 import 'profile_setup_screen.dart';
+import 'onboarding_screen.dart';
 import '../../admin/screens/admin_sign_in_screen.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
@@ -106,23 +107,34 @@ class SignInScreenState extends ConsumerState<SignInScreen> {
       // signUp already creates a stub profiles row for the Users count,
       // so row-existence alone would skip setup on every first sign-in.
       var profileCompleted = false;
+      var onboardingCompleted = false;
       if (userId != null) {
         final row = await Supabase.instance.client
             .from('profiles')
-            .select('profile_completed')
+            .select('profile_completed, onboarding_completed')
             .eq('id', userId)
             .maybeSingle();
         profileCompleted = row?['profile_completed'] as bool? ?? false;
+        onboardingCompleted = row?['onboarding_completed'] as bool? ?? false;
       }
 
       if (!mounted) return;
 
+      // Three-tier gate: profile setup first, then onboarding, then
+      // home — each only shown once per user, same pattern as
+      // profile_completed above.
+      Widget destination;
+      if (!profileCompleted) {
+        destination = const ProfileSetupScreen();
+      } else if (!onboardingCompleted) {
+        destination = const OnboardingScreen();
+      } else {
+        destination = const UserHomeShell();
+      }
+
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) =>
-              profileCompleted ? const UserHomeShell() : const ProfileSetupScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => destination),
       );
     } else if (authState.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(

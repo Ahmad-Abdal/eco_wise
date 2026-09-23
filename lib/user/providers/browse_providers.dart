@@ -14,10 +14,10 @@ class BrowseCategory {
 // filename here and drop the matching image into assets/categories/.
 const _categoryAssetFileNames = {
   'Cleaning': 'cleaning.png',
-  'Fashion': 'fashion.png',
+  'Kitchen Accessories': 'kitchen.png',
   'Home & Living': 'home_living.png',
   'Personal Care': 'personal_care.png',
-  'Kitchen Accessories': 'kitchen_accessories.png',
+  'Fashion': 'fashion.webp',
   'Laundry': 'laundry.png',
   'Shopping': 'shopping.png',
   'Storage': 'storage.png',

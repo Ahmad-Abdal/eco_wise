@@ -78,7 +78,7 @@ class ChatFabState extends ConsumerState<ChatFab> with SingleTickerProviderState
 
     return Positioned(
       right: 20,
-      bottom: 88, // sits just above the rounded floating nav bar
+      bottom: 40, // sits just above the rounded floating nav bar
       child: AnimatedSize(
         duration: const Duration(milliseconds: 260),
         curve: Curves.easeOutCubic,
@@ -159,7 +159,6 @@ class ChatFabState extends ConsumerState<ChatFab> with SingleTickerProviderState
               ],
             ),
           ),
-          // ── Messages ──
           Expanded(
             child: chatState.messages.isEmpty
                 ? buildEmptyState()

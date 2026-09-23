@@ -4,9 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config/supabase_config.dart';
 import 'authentication/splash_screen.dart';
-
+import 'core/services/local_notifications_service.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await LocalNotificationsService.init();
 
   await dotenv.load(fileName: '.env');
 
