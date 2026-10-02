@@ -14,7 +14,6 @@ class AdminStoresScreen extends ConsumerWidget {
   static const Color lightGreenBg = Color(0xFFE7F4EC);
   static const Color borderGray = Color(0xFFE0E0E0);
   static const Color sectionFill = Color(0xFFF7F8F6);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final storesAsync = ref.watch(storeListProvider);
@@ -133,7 +132,7 @@ class AdminStoresScreen extends ConsumerWidget {
                                   const SizedBox(width: 4),
                                   Expanded(
                                     child: Text(
-                                      store.address,
+                                      store.address ?? 'Address unavailable',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(color: textGray, fontSize: 12),

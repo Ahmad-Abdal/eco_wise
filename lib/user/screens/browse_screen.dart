@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/browse_providers.dart';
 import 'search_results_screen.dart';
 import 'all_categories_screen.dart';
+import 'package:ecowise/user/screens/sustainability_tips_screen.dart';
 
 class BrowseScreen extends ConsumerStatefulWidget {
   const BrowseScreen({Key? key}) : super(key: key);
@@ -11,9 +12,6 @@ class BrowseScreen extends ConsumerStatefulWidget {
   ConsumerState<BrowseScreen> createState() => BrowseScreenState();
 }
 
-// Display order for the home grid only — Fashion first (short, single
-// line) so Kitchen Accessories (two lines) lands in the second row
-// instead of visually competing for space in the top row.
 const _homeGridOrder = [
   'Fashion',
   'Cleaning',
@@ -192,6 +190,12 @@ class BrowseScreenState extends ConsumerState<BrowseScreen> {
             const SizedBox(height: 24),
             GestureDetector(
               onTap: () {
+                Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => const SustainabilityTipsScreen(),
+  ),
+);
                 // TODO: wire up the "Make Better Choices" destination
                 // in a later step.
               },

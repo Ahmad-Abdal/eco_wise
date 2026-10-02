@@ -14,15 +14,18 @@ class AddStoreScreen extends ConsumerStatefulWidget {
 }
 
 class AddStoreScreenState extends ConsumerState<AddStoreScreen> {
-  static const Color appBackground = Color(0xFFFDF9F0);
-  static const Color darkText = Color(0xFF2F4F4F);
-  static const Color vibrantGreen = Color(0xFF24AC5D);
-  static const Color darkTeal = Color(0xFF1C7043);
-  static const Color fieldFill = Color(0xFFF3EEDD);
+  static const Color pureWhite = Colors.white;
+  static const Color textDark = Color(0xFF1A1A1A);
+  static const Color textGray = Color(0xFF6B6B6B);
+  static const Color primaryGreen = Color(0xFF1B7A43);
+  static const Color lightGreenBg = Color(0xFFE7F4EC);
+  static const Color borderGray = Color(0xFFE0E0E0);
+  static const Color sectionFill = Color(0xFFF7F8F6);
 
   final formKey = GlobalKey<FormState>();
   final nameController = TextEditingController();
   final locationController = TextEditingController();
+  final onlineLinkController = TextEditingController();
   final phoneController = TextEditingController();
   final websiteController = TextEditingController();
   final openingHoursController = TextEditingController();
@@ -31,10 +34,15 @@ class AddStoreScreenState extends ConsumerState<AddStoreScreen> {
   File? storeImage;
   PickedLocation? pickedLocation;
 
+  // 'physical' → map picker for a real address.
+  // 'online'   → a single link field replaces the map entirely.
+  String storeType = 'physical';
+
   @override
   void dispose() {
     nameController.dispose();
     locationController.dispose();
+    onlineLinkController.dispose();
     phoneController.dispose();
     websiteController.dispose();
     openingHoursController.dispose();
@@ -49,19 +57,23 @@ class AddStoreScreenState extends ConsumerState<AddStoreScreen> {
   }) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: darkTeal),
-      prefixIcon: Icon(icon, color: darkTeal),
+      labelStyle: const TextStyle(color: textGray),
+      prefixIcon: Icon(icon, color: primaryGreen),
       suffixIcon: suffixIcon,
       filled: true,
-      fillColor: fieldFill,
+      fillColor: sectionFill,
       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
+        borderSide: BorderSide(color: borderGray),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: borderGray),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: vibrantGreen, width: 1.5),
+        borderSide: const BorderSide(color: primaryGreen, width: 1.5),
       ),
     );
   }
@@ -96,9 +108,15 @@ class AddStoreScreenState extends ConsumerState<AddStoreScreen> {
       );
       return;
     }
-    if (pickedLocation == null) {
+    if (storeType == 'physical' && pickedLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please pin the store location')),
+      );
+      return;
+    }
+    if (storeType == 'online' && onlineLinkController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter the store's website or link")),
       );
       return;
     }
@@ -106,11 +124,14 @@ class AddStoreScreenState extends ConsumerState<AddStoreScreen> {
     await ref.read(addStoreNotifierProvider.notifier).saveStore(
           imageFile: storeImage!,
           name: nameController.text.trim(),
-          address: pickedLocation!.address,
-          latitude: pickedLocation!.latitude,
-          longitude: pickedLocation!.longitude,
+          storeType: storeType,
+          address: storeType == 'physical' ? pickedLocation!.address : null,
+          latitude: storeType == 'physical' ? pickedLocation!.latitude : null,
+          longitude: storeType == 'physical' ? pickedLocation!.longitude : null,
+          website: storeType == 'online'
+              ? onlineLinkController.text.trim()
+              : (websiteController.text.trim().isEmpty ? null : websiteController.text.trim()),
           phone: phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
-          website: websiteController.text.trim().isEmpty ? null : websiteController.text.trim(),
           openingHours: openingHoursController.text.trim().isEmpty
               ? null
               : openingHoursController.text.trim(),
@@ -138,14 +159,14 @@ class AddStoreScreenState extends ConsumerState<AddStoreScreen> {
     final saveState = ref.watch(addStoreNotifierProvider);
 
     return Scaffold(
-      backgroundColor: appBackground,
+      backgroundColor: pureWhite,
       appBar: AppBar(
-        backgroundColor: appBackground,
+        backgroundColor: pureWhite,
         elevation: 0,
-        iconTheme: const IconThemeData(color: darkTeal),
+        iconTheme: const IconThemeData(color: textDark),
         title: const Text(
           'Add store',
-          style: TextStyle(color: darkText, fontWeight: FontWeight.bold),
+          style: TextStyle(color: textDark, fontWeight: FontWeight.bold),
         ),
       ),
       body: SafeArea(
@@ -163,7 +184,7 @@ class AddStoreScreenState extends ConsumerState<AddStoreScreen> {
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: fieldFill,
+                        color: sectionFill,
                         shape: BoxShape.circle,
                         image: storeImage != null
                             ? DecorationImage(
@@ -175,7 +196,7 @@ class AddStoreScreenState extends ConsumerState<AddStoreScreen> {
                       child: storeImage == null
                           ? const Icon(
                               Icons.add_a_photo_outlined,
-                              color: darkTeal,
+                              color: textGray,
                               size: 32,
                             )
                           : null,
@@ -186,13 +207,13 @@ class AddStoreScreenState extends ConsumerState<AddStoreScreen> {
                 const Center(
                   child: Text(
                     'Store image (required)',
-                    style: TextStyle(color: darkTeal, fontSize: 12),
+                    style: TextStyle(color: textGray, fontSize: 12),
                   ),
                 ),
                 const SizedBox(height: 24),
                 TextFormField(
                   controller: nameController,
-                  style: const TextStyle(color: darkText),
+                  style: const TextStyle(color: textDark),
                   decoration: buildInputDecoration(
                     label: 'Store name',
                     icon: Icons.storefront_outlined,
@@ -205,34 +226,77 @@ class AddStoreScreenState extends ConsumerState<AddStoreScreen> {
                   },
                 ),
                 const SizedBox(height: 18),
-                GestureDetector(
-                  onTap: pickLocation,
-                  child: AbsorbPointer(
-                    child: TextFormField(
-                      controller: locationController,
-                      style: const TextStyle(color: darkText),
-                      decoration: buildInputDecoration(
-                        label: 'Location',
-                        icon: Icons.location_on_outlined,
-                        suffixIcon: const Icon(
-                          Icons.map_outlined,
-                          color: vibrantGreen,
+                DropdownButtonFormField<String>(
+                  value: storeType,
+                  decoration: buildInputDecoration(
+                    label: 'Store type',
+                    icon: Icons.category_outlined,
+                  ),
+                  dropdownColor: pureWhite,
+                  style: const TextStyle(color: textDark),
+                  items: const [
+                    DropdownMenuItem(value: 'physical', child: Text('Physical store')),
+                    DropdownMenuItem(value: 'online', child: Text('Online store')),
+                  ],
+                  onChanged: (value) => setState(() => storeType = value ?? 'physical'),
+                ),
+                const SizedBox(height: 18),
+                if (storeType == 'physical') ...[
+                  GestureDetector(
+                    onTap: pickLocation,
+                    child: AbsorbPointer(
+                      child: TextFormField(
+                        controller: locationController,
+                        style: const TextStyle(color: textDark),
+                        decoration: buildInputDecoration(
+                          label: 'Location',
+                          icon: Icons.location_on_outlined,
+                          suffixIcon: const Icon(
+                            Icons.map_outlined,
+                            color: primaryGreen,
+                          ),
                         ),
+                        validator: (value) {
+                          if (storeType == 'physical' && pickedLocation == null) {
+                            return 'Pin the store location on the map';
+                          }
+                          return null;
+                        },
                       ),
-                      validator: (value) {
-                        if (pickedLocation == null) {
-                          return 'Pin the store location on the map';
-                        }
-                        return null;
-                      },
                     ),
                   ),
-                ),
+                  const SizedBox(height: 18),
+                  TextFormField(
+                    controller: websiteController,
+                    keyboardType: TextInputType.url,
+                    style: const TextStyle(color: textDark),
+                    decoration: buildInputDecoration(
+                      label: 'Website (optional)',
+                      icon: Icons.language_outlined,
+                    ),
+                  ),
+                ] else ...[
+                  TextFormField(
+                    controller: onlineLinkController,
+                    keyboardType: TextInputType.url,
+                    style: const TextStyle(color: textDark),
+                    decoration: buildInputDecoration(
+                      label: 'Website / store link',
+                      icon: Icons.language_outlined,
+                    ),
+                    validator: (value) {
+                      if (storeType == 'online' && (value == null || value.trim().isEmpty)) {
+                        return "Enter the store's website or link";
+                      }
+                      return null;
+                    },
+                  ),
+                ],
                 const SizedBox(height: 18),
                 TextFormField(
                   controller: phoneController,
                   keyboardType: TextInputType.phone,
-                  style: const TextStyle(color: darkText),
+                  style: const TextStyle(color: textDark),
                   decoration: buildInputDecoration(
                     label: 'Phone (optional)',
                     icon: Icons.call_outlined,
@@ -240,21 +304,11 @@ class AddStoreScreenState extends ConsumerState<AddStoreScreen> {
                 ),
                 const SizedBox(height: 18),
                 TextFormField(
-                  controller: websiteController,
-                  keyboardType: TextInputType.url,
-                  style: const TextStyle(color: darkText),
-                  decoration: buildInputDecoration(
-                    label: 'Website (optional)',
-                    icon: Icons.language_outlined,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                TextFormField(
                   controller: openingHoursController,
                   maxLines: 2,
-                  style: const TextStyle(color: darkText),
+                  style: const TextStyle(color: textDark),
                   decoration: buildInputDecoration(
-                    label: 'Opening hours (optional)',
+                    label: storeType == 'physical' ? 'Opening hours (optional)' : 'Hours of operation (optional)',
                     icon: Icons.schedule_outlined,
                   ),
                 ),
@@ -262,7 +316,7 @@ class AddStoreScreenState extends ConsumerState<AddStoreScreen> {
                 TextFormField(
                   controller: descriptionController,
                   maxLines: 4,
-                  style: const TextStyle(color: darkText),
+                  style: const TextStyle(color: textDark),
                   decoration: buildInputDecoration(
                     label: 'Eco-friendly description (optional)',
                     icon: Icons.eco_outlined,
@@ -274,10 +328,10 @@ class AddStoreScreenState extends ConsumerState<AddStoreScreen> {
                   height: 56,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: vibrantGreen,
+                      backgroundColor: primaryGreen,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(28),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                     onPressed: saveState.isSaving ? null : handleSave,

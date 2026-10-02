@@ -36,9 +36,10 @@ class AddStoreNotifier extends Notifier<AddStoreState> {
   Future<void> saveStore({
     required File imageFile,
     required String name,
-    required String address,
-    required double latitude,
-    required double longitude,
+    required String storeType,
+    String? address,
+    double? latitude,
+    double? longitude,
     String? phone,
     String? website,
     String? openingHours,
@@ -55,6 +56,7 @@ class AddStoreNotifier extends Notifier<AddStoreState> {
       final store = StoreModel(
         name: name,
         imageUrl: imageUrl,
+        storeType: storeType,
         address: address,
         latitude: latitude,
         longitude: longitude,

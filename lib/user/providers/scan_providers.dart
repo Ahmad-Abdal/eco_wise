@@ -5,31 +5,34 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class StoreSummary {
   final String id;
   final String name;
-  final String address;
+  final String storeType;
+  final String? address;
   final String? phone;
   final String? website;
-  final double latitude;
-  final double longitude;
+  final double? latitude;
+  final double? longitude;
 
   const StoreSummary({
     required this.id,
     required this.name,
-    required this.address,
+    required this.storeType,
+    this.address,
     this.phone,
     this.website,
-    required this.latitude,
-    required this.longitude,
+    this.latitude,
+    this.longitude,
   });
 
   factory StoreSummary.fromMap(Map<String, dynamic> map) {
     return StoreSummary(
       id: map['id'] as String? ?? '',
       name: map['name'] as String? ?? 'Unknown store',
-      address: map['address'] as String? ?? '',
+      storeType: map['store_type'] as String? ?? 'physical',
+      address: map['address'] as String?,
       phone: map['phone'] as String?,
       website: map['website'] as String?,
-      latitude: (map['latitude'] as num?)?.toDouble() ?? 0,
-      longitude: (map['longitude'] as num?)?.toDouble() ?? 0,
+      latitude: (map['latitude'] as num?)?.toDouble(),
+      longitude: (map['longitude'] as num?)?.toDouble(),
     );
   }
 }
@@ -95,7 +98,7 @@ class ProductDetail {
 SupabaseClient get _supabase => Supabase.instance.client;
 
 const _productWithStoreSelect =
-    '*, stores(id, name, address, phone, website, latitude, longitude)';
+    '*, stores(id, name, store_type, address, phone, website, latitude, longitude)';
 
 // Shared by the Scan screen, Search results (tapping a product card),
 // and the Wishlist screen — one place that knows how to turn a

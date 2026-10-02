@@ -215,6 +215,7 @@ class AddProductScreenState extends ConsumerState<AddProductScreen> {
         ),
         content: SizedBox(
           width: 260,
+          child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -240,7 +241,7 @@ class AddProductScreenState extends ConsumerState<AddProductScreen> {
               ),
             ],
           ),
-        ),
+        )),
         actions: [
           TextButton(
             onPressed: () {

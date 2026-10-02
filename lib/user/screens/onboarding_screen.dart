@@ -71,7 +71,7 @@ class OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget buildProgressDots() {
     return Row(
-      children: List.generate(3, (index) {
+      children: List.generate(2, (index) {
         final isActive = index == currentPage;
         return Container(
           margin: const EdgeInsets.only(right: 6),
@@ -165,57 +165,6 @@ class OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     label: category,
                     selected: selected,
                     onTap: () => notifier.toggleCategory(category),
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-          SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryGreen,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              onPressed: goToNextPage,
-              child: const Text('Next', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildSustainabilityPage() {
-    final state = ref.watch(onboardingNotifierProvider);
-    final notifier = ref.read(onboardingNotifierProvider.notifier);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          buildPageHeader(
-            title: 'What matters most to you?',
-            subtitle: 'This helps us surface the right products first.',
-            showBack: true,
-          ),
-          const SizedBox(height: 28),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: sustainabilityPreferenceOptions.map((option) {
-                  final value = option['value']!;
-                  final selected = state.selectedSustainabilityPrefs.contains(value);
-                  return buildMultiSelectChip(
-                    emoji: option['emoji']!,
-                    label: option['label']!,
-                    selected: selected,
-                    onTap: () => notifier.toggleSustainabilityPref(value),
                   );
                 }).toList(),
               ),
@@ -349,7 +298,6 @@ class OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 onPageChanged: (index) => setState(() => currentPage = index),
                 children: [
                   buildCategoriesPage(),
-                  buildSustainabilityPage(),
                   buildPricePage(),
                 ],
               ),

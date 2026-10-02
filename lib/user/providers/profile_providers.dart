@@ -100,14 +100,15 @@ class ProfileSetupNotifier extends Notifier<ProfileSetupState> {
         avatarUrl = supabase.storage.from('avatars').getPublicUrl(fileName);
       }
 
-      await supabase.from('profiles').upsert({
-        'id': userId,
-        'name': name,
-        'email': userEmail,
-        if (avatarUrl != null) 'avatar_url': avatarUrl,
-        'city': city,
-        'bio': bio,
-      });
+     await supabase.from('profiles').upsert({
+  'id': userId,
+  'name': name,
+  'email': userEmail,
+  if (avatarUrl != null) 'avatar_url': avatarUrl,
+  'city': city,
+  'bio': bio,
+  'profile_completed': true,  
+});
 
       state = state.copyWith(isSaving: false, isSaved: true);
     } catch (error) {

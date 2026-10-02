@@ -4,8 +4,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/home_providers.dart';
 import '../providers/profile_providers.dart';
 import '../providers/notifications_providers.dart';
+import '../providers/scan_providers.dart';
 import 'sign_in_screen.dart';
 import 'notifications_screen.dart';
+import 'product_detail_screen.dart';
 
 class UserHomeScreen extends ConsumerWidget {
   const UserHomeScreen({Key? key}) : super(key: key);
@@ -72,16 +74,24 @@ class UserHomeScreen extends ConsumerWidget {
                     side: const BorderSide(color: Colors.redAccent, width: 1.3),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
-                  onPressed: () async {
-                    await Supabase.instance.client.auth.signOut();
-                    if (!context.mounted) return;
-                    Navigator.of(context).pop(); // close dialog
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => const SignInScreen()),
-                      (route) => false,
-                    );
-                  },
+                onPressed: () async {
+  await Supabase.instance.client.auth.signOut();
+
+  // Clear everything cached for the previous user.
+  ref.invalidate(userDisplayNameProvider);
+  ref.invalidate(currentProfileProvider);
+  ref.invalidate(userEcoScoreProvider);
+  ref.invalidate(recommendedProductsProvider);
+  ref.invalidate(unreadCountProvider);
+
+  if (!context.mounted) return;
+  Navigator.of(context).pop(); // close dialog
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(builder: (context) => const SignInScreen()),
+    (route) => false,
+  );
+},
                   icon: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 18),
                   label: const Text(
                     'Log out',
@@ -95,6 +105,7 @@ class UserHomeScreen extends ConsumerWidget {
       ),
     );
   }
+  
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -333,7 +344,7 @@ class UserHomeScreen extends ConsumerWidget {
                             const SizedBox(height: 6),
                             Row(
                               children: [
-                                Text('\$${p.price.toStringAsFixed(2)}',
+                                Text('\Rs${p.price.toStringAsFixed(2)}',
                                     style: const TextStyle(color: textGray, fontWeight: FontWeight.w700, fontSize: 13)),
                                 const SizedBox(width: 8),
                                 Flexible(
@@ -353,8 +364,21 @@ class UserHomeScreen extends ConsumerWidget {
                       ),
                       const SizedBox(width: 6),
                       TextButton(
-                        onPressed: () {
-                          // TODO: navigate to product detail screen
+                        onPressed: () async {
+                          final productId = p.id;
+                          if (productId == null) return;
+                          final detail = await fetchProductById(productId);
+                          if (!context.mounted) return;
+                          if (detail == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Could not load this product.')),
+                            );
+                            return;
+                          }
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => ProductDetailScreen(product: detail)),
+                          );
                         },
                         style: TextButton.styleFrom(
                           backgroundColor: primaryGreen,

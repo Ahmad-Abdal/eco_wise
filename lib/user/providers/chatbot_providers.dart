@@ -5,7 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/config/env_config.dart';
 
 class ChatMessage {
-  final String role; // 'user' or 'assistant'
+  final String role; 
   final String content;
 
   const ChatMessage({required this.role, required this.content});

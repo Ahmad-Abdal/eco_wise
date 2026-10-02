@@ -25,7 +25,6 @@ class AuthState {
   }
 }
 
-// ── Regular user auth (Supabase Auth) ─────────────────────────────
 class AuthNotifier extends Notifier<AuthState> {
   @override
   AuthState build() => const AuthState();
@@ -101,11 +100,6 @@ final authNotifierProvider = NotifierProvider<AuthNotifier, AuthState>(
   AuthNotifier.new,
 );
 
-// ── Admin auth (single static admin, no profiles/role table) ──────
-// There is exactly one admin account. It was created once, manually, in
-// Supabase Authentication → Users (email + password live only there,
-// never in this codebase). We only need to confirm that the address
-// which just signed in is that one known admin address.
 class AdminIdentity {
   static const String email = 'admin@ecowise.com';
 }

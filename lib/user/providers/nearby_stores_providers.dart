@@ -48,8 +48,8 @@ final nearbyStoresProvider = FutureProvider.autoDispose<List<NearbyStore>>((ref)
       final meters = Geolocator.distanceBetween(
         position.latitude,
         position.longitude,
-        store.latitude,
-        store.longitude,
+        store.latitude ?? 0.0,
+        store.longitude ?? 0.0,
       );
       distanceKm = meters / 1000;
     }

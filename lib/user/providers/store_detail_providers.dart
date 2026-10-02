@@ -39,18 +39,17 @@ class ReviewEntry {
 final recentReviewsProvider = FutureProvider.autoDispose.family<List<ReviewEntry>, String>((ref, storeId) async {
   final supabase = Supabase.instance.client;
   final data = await supabase
-      .from('store_ratings')
-      .select('rating, comment, created_at, profiles(name)')
+      .from('store_reviews_view')
+      .select('rating, comment, created_at, reviewer_name')
       .eq('store_id', storeId)
       .order('created_at', ascending: false)
-      .limit(10);
+      .limit(20);
 
   return (data as List).map((row) {
-    final profile = row['profiles'] as Map<String, dynamic>?;
     return ReviewEntry(
       rating: row['rating'] as int,
       comment: row['comment'] as String?,
-      reviewerName: profile?['name'] as String?,
+      reviewerName: row['reviewer_name'] as String?,
       createdAt: DateTime.parse(row['created_at'] as String),
     );
   }).toList();

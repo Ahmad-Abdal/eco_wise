@@ -43,9 +43,23 @@ class ComparePricesScreenState extends State<ComparePricesScreen> {
   }
 
   Future<void> openDirections(StoreOffer offer) async {
+    final store = offer.product.store;
+
+    // Online stores (or any store missing coordinates) have nothing to
+    // navigate to — open their website link instead, if they have one.
+    if (store.latitude == null || store.longitude == null) {
+      if (store.website != null && store.website!.trim().isNotEmpty) {
+        final websiteUrl = Uri.tryParse(store.website!.trim());
+        if (websiteUrl != null) {
+          await launchUrl(websiteUrl, mode: LaunchMode.externalApplication);
+        }
+      }
+      return;
+    }
+
     final url = Uri.parse(
       'https://www.google.com/maps/dir/?api=1&destination='
-      '${offer.product.store.latitude},${offer.product.store.longitude}',
+      '${store.latitude},${store.longitude}',
     );
     await launchUrl(url, mode: LaunchMode.externalApplication);
   }
@@ -291,7 +305,10 @@ class ComparePricesScreenState extends State<ComparePricesScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           onPressed: () => openDirections(offer),
-                          child: const Text('Get Directions', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                          child: Text(
+                            store.latitude != null && store.longitude != null ? 'Get Directions' : 'Visit Website',
+                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
                         ),
                       ),
                     ],

@@ -1,9 +1,10 @@
 class StoreModel {
   final String name;
   final String imageUrl;
-  final String address;
-  final double latitude;
-  final double longitude;
+  final String storeType; // 'physical' or 'online'
+  final String? address;
+  final double? latitude;
+  final double? longitude;
   final String? phone;
   final String? website;
   final String? openingHours;
@@ -12,9 +13,10 @@ class StoreModel {
   const StoreModel({
     required this.name,
     required this.imageUrl,
-    required this.address,
-    required this.latitude,
-    required this.longitude,
+    required this.storeType,
+    this.address,
+    this.latitude,
+    this.longitude,
     this.phone,
     this.website,
     this.openingHours,
@@ -25,6 +27,7 @@ class StoreModel {
     return {
       'name': name,
       'image_url': imageUrl,
+      'store_type': storeType,
       'address': address,
       'latitude': latitude,
       'longitude': longitude,

@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/nearby_stores_providers.dart';
 import '../../core/config/env_config.dart';
 import 'user_store_detail_screen.dart';
+import 'web_view_screen.dart';
 
 class StoresScreen extends ConsumerStatefulWidget {
   const StoresScreen({Key? key}) : super(key: key);
@@ -26,11 +27,22 @@ class StoresScreenState extends ConsumerState<StoresScreen> {
   bool showMapView = false;
   final mapController = MapController();
 
+  bool isPhysicalWithCoords(dynamic store) {
+    return store.storeType == 'physical' && store.latitude != null && store.longitude != null;
+  }
+
   Future<void> openDirections(double lat, double lng) async {
     final uri = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+
+  void openWebsite(String website, String storeName) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => WebViewScreen(url: website, title: storeName)),
+    );
   }
 
   @override
@@ -140,6 +152,12 @@ class StoresScreenState extends ConsumerState<StoresScreen> {
       itemBuilder: (context, index) {
         final ns = stores[index];
         final store = ns.store;
+        final isPhysical = store.storeType == 'physical';
+        final hasCoordinates = store.latitude != null && store.longitude != null;
+        final hasWebsite = store.website != null && store.website!.trim().isNotEmpty;
+        final directionsEnabled = isPhysical && hasCoordinates;
+        final websiteEnabled = !isPhysical && hasWebsite;
+
         return Container(
           margin: const EdgeInsets.only(bottom: 14),
           padding: const EdgeInsets.all(14),
@@ -198,12 +216,17 @@ class StoresScreenState extends ConsumerState<StoresScreen> {
                                 decoration: BoxDecoration(color: sectionFill, borderRadius: BorderRadius.circular(8)),
                                 child: Text('New', style: TextStyle(color: textGray.withOpacity(0.7), fontSize: 11, fontWeight: FontWeight.w600)),
                               ),
-                            if (ns.distanceKm != null) ...[
+                            if (isPhysical && ns.distanceKm != null) ...[
                               const SizedBox(width: 8),
                               Icon(Icons.near_me_outlined, size: 13, color: textGray.withOpacity(0.7)),
                               const SizedBox(width: 3),
                               Text('${ns.distanceKm!.toStringAsFixed(1)} km away',
                                   style: TextStyle(color: textGray.withOpacity(0.85), fontSize: 12)),
+                            ] else if (!isPhysical) ...[
+                              const SizedBox(width: 8),
+                              Icon(Icons.language_rounded, size: 13, color: textGray.withOpacity(0.7)),
+                              const SizedBox(width: 3),
+                              Text('Online', style: TextStyle(color: textGray.withOpacity(0.85), fontSize: 12)),
                             ],
                           ],
                         ),
@@ -218,13 +241,29 @@ class StoresScreenState extends ConsumerState<StoresScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: primaryGreen, width: 1.3),
+                        side: BorderSide(
+                          color: directionsEnabled || websiteEnabled ? primaryGreen : borderGray,
+                          width: 1.3,
+                        ),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      onPressed: () => openDirections(store.latitude, store.longitude),
-                      icon: const Icon(Icons.directions_rounded, size: 18, color: primaryGreen),
-                      label: const Text('Directions', style: TextStyle(color: primaryGreen, fontWeight: FontWeight.w700, fontSize: 13)),
+                      onPressed: isPhysical
+                          ? (directionsEnabled ? () => openDirections(store.latitude!, store.longitude!) : null)
+                          : (websiteEnabled ? () => openWebsite(store.website!, store.name) : null),
+                      icon: Icon(
+                        isPhysical ? Icons.directions_rounded : Icons.language_rounded,
+                        size: 18,
+                        color: directionsEnabled || websiteEnabled ? primaryGreen : textGray,
+                      ),
+                      label: Text(
+                        isPhysical ? 'Directions' : 'Visit Website',
+                        style: TextStyle(
+                          color: directionsEnabled || websiteEnabled ? primaryGreen : textGray,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -255,9 +294,19 @@ class StoresScreenState extends ConsumerState<StoresScreen> {
   }
 
   Widget _buildMapView(List<NearbyStore> stores, dynamic position) {
+    // Only physical stores with real coordinates get a pin. An online
+    // store has no location at all, so it's excluded here rather than
+    // ever falling back to a placeholder point like (0,0).
+    final mappableStores = stores.where((ns) => isPhysicalWithCoords(ns.store)).toList();
+
     final center = position != null
         ? LatLng(position.latitude, position.longitude)
-        : (stores.isNotEmpty ? LatLng(stores.first.store.latitude, stores.first.store.longitude) : const LatLng(24.8607, 67.0011));
+        : (mappableStores.isNotEmpty
+            // Safe: isPhysicalWithCoords already guarantees these are
+            // non-null for everything in mappableStores — the ! just
+            // tells the analyzer what we already filtered for.
+            ? LatLng(mappableStores.first.store.latitude!, mappableStores.first.store.longitude!)
+            : const LatLng(24.8607, 67.0011));
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -278,9 +327,11 @@ class StoresScreenState extends ConsumerState<StoresScreen> {
                   height: 40,
                   child: const Icon(Icons.my_location_rounded, color: Colors.blue, size: 32),
                 ),
-              for (final ns in stores)
+              for (final ns in mappableStores)
                 Marker(
-                  point: LatLng(ns.store.latitude, ns.store.longitude),
+                  // Safe for the same reason as above — mappableStores
+                  // is already filtered to physical stores with coords.
+                  point: LatLng(ns.store.latitude!, ns.store.longitude!),
                   width: 46,
                   height: 46,
                   child: GestureDetector(
@@ -296,6 +347,9 @@ class StoresScreenState extends ConsumerState<StoresScreen> {
   }
 
   void _showStoreSheet(NearbyStore ns) {
+    // Only ever called from a map marker, which only exists for
+    // physical stores with real coordinates — no online-store branch
+    // needed here.
     final store = ns.store;
     showModalBottomSheet(
       context: context,
@@ -331,7 +385,7 @@ class StoresScreenState extends ConsumerState<StoresScreen> {
                       children: [
                         Text(store.name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: textDark)),
                         const SizedBox(height: 2),
-                        Text(store.address, style: TextStyle(color: textGray.withOpacity(0.85), fontSize: 12.5)),
+                        Text(store.address ?? 'Address not available', style: TextStyle(color: textGray.withOpacity(0.85), fontSize: 12.5)),
                       ],
                     ),
                   ),
@@ -374,7 +428,7 @@ class StoresScreenState extends ConsumerState<StoresScreen> {
                   ),
                   onPressed: () {
                     Navigator.pop(context);
-                    openDirections(store.latitude, store.longitude);
+                    openDirections(store.latitude!, store.longitude!);
                   },
                   icon: const Icon(Icons.directions_rounded, color: Colors.white, size: 20),
                   label: const Text('Get Directions', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),

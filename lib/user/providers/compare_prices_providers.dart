@@ -39,7 +39,7 @@ class CompareResult {
 SupabaseClient get _supabase => Supabase.instance.client;
 
 const _productWithStoreSelect =
-    '*, stores(id, name, address, phone, website, latitude, longitude)';
+    '*, stores(id, name, store_type, address, phone, website, latitude, longitude)';
 
 Future<CompareResult> fetchPriceComparison(ProductDetail original) async {
   try {
@@ -80,12 +80,14 @@ Future<void> _attachDistances(List<StoreOffer> offers) async {
 
     for (final offer in offers) {
       final store = offer.product.store;
-      if (store.latitude == 0 && store.longitude == 0) continue;
+      // Online stores (or any store missing coordinates) simply have
+      // no distance to show — not an error, just nothing to compute.
+      if (store.latitude == null || store.longitude == null) continue;
       offer.distanceKm = Geolocator.distanceBetween(
             position.latitude,
             position.longitude,
-            store.latitude,
-            store.longitude,
+            store.latitude!,
+            store.longitude!,
           ) /
           1000;
     }
