@@ -1,6 +1,4 @@
-/// Central place for all EcoWise scoring rules.
-/// Matches the rubric you defined: Material, Reusable, Recyclable,
-/// Packaging, Organic/Certification — each contributes equally (20%).
+
 class EcoScoreCalculator {
   static const Map<String, int> materialScores = {
     'Bamboo / wood': 90,

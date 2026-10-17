@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../models/product.dart';
 import '../../core/utils/eco_score.dart';
+import '../../core/services/ai_api_service.dart';
 
 class AddProductState {
   final bool isSaving;
@@ -96,10 +98,20 @@ class AddProductNotifier extends Notifier<AddProductState> {
           .select()
           .single();
 
+      final savedProduct = Product.fromMap(inserted);
+
+      // AI: create this product's MiniLM embedding in the background.
+      // Never blocks or fails the save — if the AI server is off, run
+      // "embed all" (Cell 6) later.
+      final savedId = savedProduct.id;
+      if (savedId != null) {
+        unawaited(AiApiService.embedProduct(savedId));
+      }
+
       state = state.copyWith(
         isSaving: false,
         isSaved: true,
-        savedProduct: Product.fromMap(inserted),
+        savedProduct: savedProduct,
       );
     } catch (e) {
       state = state.copyWith(

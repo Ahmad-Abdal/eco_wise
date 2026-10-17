@@ -232,20 +232,20 @@ class AdminDashboardScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Expanded(
-                      child: buildActionButton(
-                        icon: Icons.add_box_outlined,
-                        label: 'Add product',
-                        filled: false,
-                        onTap: () {
-                          final stores = storesAsync.maybeWhen(
-                            data: (data) => data,
-                            orElse: () => <StoreOverview>[],
-                          );
-                          showSelectStoreSheet(context, stores);
-                        },
-                      ),
-                    ),
+                    // Expanded(
+                    //   child: buildActionButton(
+                    //     icon: Icons.add_box_outlined,
+                    //     label: 'Add product',
+                    //     filled: false,
+                    //     onTap: () {
+                    //       final stores = storesAsync.maybeWhen(
+                    //         data: (data) => data,
+                    //         orElse: () => <StoreOverview>[],
+                    //       );
+                    //       showSelectStoreSheet(context, stores);
+                    //     },
+                    //   ),
+                    // ),
                   ],
                 ),
 

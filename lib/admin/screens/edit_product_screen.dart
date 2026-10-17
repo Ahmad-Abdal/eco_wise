@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,7 @@ import '../providers/add_product_providers.dart';
 import '../providers/dashboard_providers.dart';
 import '../../core/utils/eco_score.dart';
 import '../../core/constants/categories.dart';
+import '../../core/services/ai_api_service.dart';
 
 class EditProductScreen extends ConsumerStatefulWidget {
   final String productId;
@@ -177,6 +179,10 @@ class EditProductScreenState extends ConsumerState<EditProductScreen> {
         'packaging': packaging,
         'eco_score': liveEcoScore,
       }).eq('id', widget.productId);
+
+      // AI: name/category/description may have changed, so refresh this
+      // product's MiniLM embedding in the background (never blocks the save).
+      unawaited(AiApiService.embedProduct(widget.productId));
 
       if (storeId != null) {
         ref.invalidate(adminStoreProductsProvider(storeId!));

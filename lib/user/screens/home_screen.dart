@@ -27,79 +27,187 @@ class UserHomeScreen extends ConsumerWidget {
     'Zero Waste',
   ];
 
-  void openProfileDialog(BuildContext context, WidgetRef ref, UserProfile? profile) {
+   void openProfileDialog(BuildContext context, WidgetRef ref, UserProfile? profile) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => Dialog(
         backgroundColor: pureWhite,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: SizedBox(
-          width: 260,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 36,
-                backgroundColor: sectionFill,
-                backgroundImage: (profile?.avatarUrl != null)
-                    ? NetworkImage(profile!.avatarUrl!)
-                    : null,
-                child: profile?.avatarUrl == null
-                    ? const Icon(Icons.person, color: textGray, size: 32)
-                    : null,
-              ),
-              const SizedBox(height: 14),
-              Text(
-                profile?.name ?? 'EcoWise user',
-                style: const TextStyle(color: textDark, fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-              if (profile?.city != null) ...[
-                const SizedBox(height: 4),
-                Text(profile!.city!, style: const TextStyle(color: textGray, fontSize: 13)),
-              ],
-              if (profile?.bio != null) ...[
-                const SizedBox(height: 10),
-                Text(
-                  profile!.bio!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: textDark, fontSize: 13),
-                ),
-              ],
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.redAccent, width: 1.3),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                onPressed: () async {
-  await Supabase.instance.client.auth.signOut();
-
-  // Clear everything cached for the previous user.
-  ref.invalidate(userDisplayNameProvider);
-  ref.invalidate(currentProfileProvider);
-  ref.invalidate(userEcoScoreProvider);
-  ref.invalidate(recommendedProductsProvider);
-  ref.invalidate(unreadCountProvider);
-
-  if (!context.mounted) return;
-  Navigator.of(context).pop(); // close dialog
-  Navigator.pushAndRemoveUntil(
-    context,
-    MaterialPageRoute(builder: (context) => const SignInScreen()),
-    (route) => false,
-  );
-},
-                  icon: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 18),
-                  label: const Text(
-                    'Log out',
-                    style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 340),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ---------- Green header with overlapping avatar ----------
+                SizedBox(
+                  height: 140,
+                  child: Stack(
+                    alignment: Alignment.topCenter,
+                    children: [
+                      Container(
+                        height: 92,
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [primaryGreen, Color(0xFF2FA362)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close_rounded, color: Colors.white),
+                        ),
+                      ),
+                      Positioned(
+                        top: 48,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: pureWhite,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.10),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: CircleAvatar(
+                            radius: 40,
+                            backgroundColor: lightGreenBg,
+                            backgroundImage: (profile?.avatarUrl != null)
+                                ? NetworkImage(profile!.avatarUrl!)
+                                : null,
+                            child: profile?.avatarUrl == null
+                                ? const Icon(Icons.person, color: primaryGreen, size: 36)
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
+
+                // ---------- Name, email, city ----------
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 22),
+                  child: Column(
+                    children: [
+                      Text(
+                        profile?.name ?? 'EcoWise user',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: textDark, fontWeight: FontWeight.bold, fontSize: 20),
+                      ),
+                      if (profile?.email != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          profile!.email!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: textGray, fontSize: 13),
+                        ),
+                      ],
+                      if (profile?.city != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: lightGreenBg,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.location_on_rounded, color: primaryGreen, size: 15),
+                              const SizedBox(width: 4),
+                              Text(
+                                profile!.city!,
+                                style: const TextStyle(color: primaryGreen, fontSize: 12, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      // ---------- Bio ----------
+                      if (profile?.bio != null) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: sectionFill,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: borderGray),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'About',
+                                style: TextStyle(color: textGray, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                profile!.bio!,
+                                style: const TextStyle(color: textDark, fontSize: 13, height: 1.4),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 20),
+                      Divider(color: borderGray, height: 1),
+                      const SizedBox(height: 16),
+
+                      // ---------- Log out (same logic as before) ----------
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: TextButton.icon(
+                          style: TextButton.styleFrom(
+                            backgroundColor: Colors.redAccent.withOpacity(0.08),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          onPressed: () async {
+                            await Supabase.instance.client.auth.signOut();
+
+                            // Clear everything cached for the previous user.
+                            ref.invalidate(userDisplayNameProvider);
+                            ref.invalidate(currentProfileProvider);
+                            ref.invalidate(userEcoScoreProvider);
+                            ref.invalidate(recommendedProductsProvider);
+                            ref.invalidate(unreadCountProvider);
+
+                            if (!context.mounted) return;
+                            Navigator.of(context).pop(); // close dialog
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(builder: (context) => const SignInScreen()),
+                              (route) => false,
+                            );
+                          },
+                          icon: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 19),
+                          label: const Text(
+                            'Log out',
+                            style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w700, fontSize: 15),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

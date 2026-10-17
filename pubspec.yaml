@@ -74,6 +74,7 @@ flutter:
     - assets/categories/
     - .env
     - assets/icon/chatbot.png
+    - assets/images/
    
   # To add assets to your application, add an assets section, like this:
   # assets:

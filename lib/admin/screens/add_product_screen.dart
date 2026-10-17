@@ -23,11 +23,13 @@ class AddProductScreen extends ConsumerStatefulWidget {
 }
 
 class AddProductScreenState extends ConsumerState<AddProductScreen> {
-  static const Color appBackground = Color(0xFFFDF9F0);
-  static const Color darkText = Color(0xFF2F4F4F);
-  static const Color vibrantGreen = Color(0xFF24AC5D);
-  static const Color darkTeal = Color(0xFF1C7043);
-  static const Color fieldFill = Color(0xFFF3EEDD);
+  static const Color pureWhite = Colors.white;
+  static const Color textDark = Color(0xFF1A1A1A);
+  static const Color textGray = Color(0xFF6B6B6B);
+  static const Color primaryGreen = Color(0xFF1B7A43);
+  static const Color lightGreenBg = Color(0xFFE7F4EC);
+  static const Color borderGray = Color(0xFFE0E0E0);
+  static const Color sectionFill = Color(0xFFF7F8F6);
 
   final formKey = GlobalKey<FormState>();
   final nameController = TextEditingController();
@@ -67,18 +69,22 @@ class AddProductScreenState extends ConsumerState<AddProductScreen> {
   }) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: darkTeal),
-      prefixIcon: Icon(icon, color: darkTeal),
+      labelStyle: const TextStyle(color: textGray),
+      prefixIcon: Icon(icon, color: primaryGreen),
       filled: true,
-      fillColor: fieldFill,
+      fillColor: sectionFill,
       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
+        borderSide: BorderSide(color: borderGray),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: borderGray),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: vibrantGreen, width: 1.5),
+        borderSide: const BorderSide(color: primaryGreen, width: 1.5),
       ),
     );
   }
@@ -93,8 +99,8 @@ class AddProductScreenState extends ConsumerState<AddProductScreen> {
     return DropdownButtonFormField<String>(
       value: value,
       decoration: buildInputDecoration(label: label, icon: icon),
-      dropdownColor: fieldFill,
-      style: const TextStyle(color: darkText),
+      dropdownColor: pureWhite,
+      style: const TextStyle(color: textDark),
       items: options
           .map((o) => DropdownMenuItem(value: o, child: Text(o)))
           .toList(),
@@ -118,7 +124,7 @@ class AddProductScreenState extends ConsumerState<AddProductScreen> {
         return TextFormField(
           controller: controller,
           focusNode: focusNode,
-          style: const TextStyle(color: darkText),
+          style: const TextStyle(color: textDark),
           decoration: buildInputDecoration(
             label: 'Brand (optional — pick existing or type new)',
             icon: Icons.label_outline,
@@ -131,7 +137,7 @@ class AddProductScreenState extends ConsumerState<AddProductScreen> {
           child: Material(
             elevation: 4,
             borderRadius: BorderRadius.circular(12),
-            color: fieldFill,
+            color: pureWhite,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 200),
               child: ListView(
@@ -139,7 +145,7 @@ class AddProductScreenState extends ConsumerState<AddProductScreen> {
                 shrinkWrap: true,
                 children: options.map((brand) {
                   return ListTile(
-                    title: Text(brand, style: const TextStyle(color: darkText)),
+                    title: Text(brand, style: const TextStyle(color: textDark)),
                     onTap: () => onSelected(brand),
                   );
                 }).toList(),
@@ -207,48 +213,50 @@ class AddProductScreenState extends ConsumerState<AddProductScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: appBackground,
+        backgroundColor: pureWhite,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
+        title: const Text(
           'Product saved',
-          style: const TextStyle(color: darkText, fontWeight: FontWeight.bold),
+          style: TextStyle(color: textDark, fontWeight: FontWeight.bold),
         ),
         content: SizedBox(
           width: 260,
           child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(productName, style: const TextStyle(color: darkTeal)),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(productName, style: const TextStyle(color: textGray)),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: pureWhite,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: borderGray),
+                  ),
+                  child: QrImageView(
+                    data: productId,
+                    version: QrVersions.auto,
+                    size: 200,
+                  ),
                 ),
-                child: QrImageView(
-                  data: productId,
-                  version: QrVersions.auto,
-                  size: 200,
+                const SizedBox(height: 8),
+                Text(
+                  'Print or save this QR code and attach it to the product.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: textGray.withOpacity(0.85), fontSize: 12),
                 ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Print or save this QR code and attach it to the product.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: darkTeal, fontSize: 12),
-              ),
-            ],
+              ],
+            ),
           ),
-        )),
+        ),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.pop(context); // close dialog
               Navigator.pop(context); // back to store detail
             },
-            child: const Text('Done', style: TextStyle(color: vibrantGreen)),
+            child: const Text('Done', style: TextStyle(color: primaryGreen, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -261,14 +269,14 @@ class AddProductScreenState extends ConsumerState<AddProductScreen> {
     final existingBrandsAsync = ref.watch(existingBrandsProvider);
 
     return Scaffold(
-      backgroundColor: appBackground,
+      backgroundColor: pureWhite,
       appBar: AppBar(
-        backgroundColor: appBackground,
+        backgroundColor: pureWhite,
         elevation: 0,
-        iconTheme: const IconThemeData(color: darkTeal),
+        iconTheme: const IconThemeData(color: textDark),
         title: Text(
           'Add product · ${widget.storeName}',
-          style: const TextStyle(color: darkText, fontWeight: FontWeight.bold),
+          style: const TextStyle(color: textDark, fontWeight: FontWeight.bold),
         ),
       ),
       body: SafeArea(
@@ -286,35 +294,35 @@ class AddProductScreenState extends ConsumerState<AddProductScreen> {
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: fieldFill,
+                        color: sectionFill,
                         borderRadius: BorderRadius.circular(16),
                         image: productImage != null
                             ? DecorationImage(image: FileImage(productImage!), fit: BoxFit.cover)
                             : null,
                       ),
                       child: productImage == null
-                          ? const Icon(Icons.add_a_photo_outlined, color: darkTeal, size: 32)
+                          ? const Icon(Icons.add_a_photo_outlined, color: textGray, size: 32)
                           : null,
                     ),
                   ),
                 ),
                 const SizedBox(height: 4),
                 const Center(
-                  child: Text('Product image (required)', style: TextStyle(color: darkTeal, fontSize: 12)),
+                  child: Text('Product image (required)', style: TextStyle(color: textGray, fontSize: 12)),
                 ),
                 const SizedBox(height: 24),
                 TextFormField(
                   controller: nameController,
-                  style: const TextStyle(color: darkText),
+                  style: const TextStyle(color: textDark),
                   decoration: buildInputDecoration(label: 'Product name', icon: Icons.inventory_2_outlined),
                   validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter product name' : null,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 DropdownButtonFormField<String>(
                   value: selectedCategory,
                   decoration: buildInputDecoration(label: 'Category', icon: Icons.category_outlined),
-                  dropdownColor: fieldFill,
-                  style: const TextStyle(color: darkText),
+                  dropdownColor: pureWhite,
+                  style: const TextStyle(color: textDark),
                   hint: const Text('Select a category'),
                   items: productCategories
                       .map((c) => DropdownMenuItem(value: c, child: Text(c)))
@@ -322,32 +330,32 @@ class AddProductScreenState extends ConsumerState<AddProductScreen> {
                   onChanged: (v) => setState(() => selectedCategory = v),
                   validator: (v) => v == null ? 'Select a category' : null,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 existingBrandsAsync.when(
                   loading: () => TextFormField(
                     controller: brandController,
-                    style: const TextStyle(color: darkText),
+                    style: const TextStyle(color: textDark),
                     decoration: buildInputDecoration(label: 'Brand (optional)', icon: Icons.label_outline),
                   ),
                   error: (error, stack) => TextFormField(
                     controller: brandController,
-                    style: const TextStyle(color: darkText),
+                    style: const TextStyle(color: textDark),
                     decoration: buildInputDecoration(label: 'Brand (optional)', icon: Icons.label_outline),
                   ),
                   data: (existingBrands) => buildBrandAutocomplete(existingBrands),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 TextFormField(
                   controller: descriptionController,
                   maxLines: 3,
-                  style: const TextStyle(color: darkText),
+                  style: const TextStyle(color: textDark),
                   decoration: buildInputDecoration(label: 'Description (optional)', icon: Icons.notes_outlined),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 TextFormField(
                   controller: priceController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  style: const TextStyle(color: darkText),
+                  style: const TextStyle(color: textDark),
                   decoration: buildInputDecoration(label: 'Price', icon: Icons.attach_money_rounded),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return 'Enter price';
@@ -355,7 +363,7 @@ class AddProductScreenState extends ConsumerState<AddProductScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 buildDropdown(
                   label: 'Material',
                   icon: Icons.eco_outlined,
@@ -363,7 +371,7 @@ class AddProductScreenState extends ConsumerState<AddProductScreen> {
                   options: EcoScoreCalculator.materialScores.keys.toList(),
                   onChanged: (v) => setState(() => material = v!),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 buildDropdown(
                   label: 'Recyclable',
                   icon: Icons.recycling_outlined,
@@ -371,7 +379,7 @@ class AddProductScreenState extends ConsumerState<AddProductScreen> {
                   options: const ['Yes', 'Depends', 'No', 'Unknown'],
                   onChanged: (v) => setState(() => recyclable = v!),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 buildDropdown(
                   label: 'Reusable',
                   icon: Icons.autorenew_rounded,
@@ -379,7 +387,7 @@ class AddProductScreenState extends ConsumerState<AddProductScreen> {
                   options: const ['Yes', 'No', 'Unknown'],
                   onChanged: (v) => setState(() => reusable = v!),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 buildDropdown(
                   label: 'Sustainable Certification / Organic',
                   icon: Icons.verified_outlined,
@@ -392,7 +400,7 @@ class AddProductScreenState extends ConsumerState<AddProductScreen> {
                   ],
                   onChanged: (v) => setState(() => certification = v!),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 buildDropdown(
                   label: 'Packaging',
                   icon: Icons.inventory_outlined,
@@ -405,7 +413,7 @@ class AddProductScreenState extends ConsumerState<AddProductScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: fieldFill,
+                    color: lightGreenBg,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
@@ -413,12 +421,12 @@ class AddProductScreenState extends ConsumerState<AddProductScreen> {
                     children: [
                       const Text(
                         'Eco Score (auto-calculated)',
-                        style: TextStyle(color: darkTeal, fontWeight: FontWeight.w600),
+                        style: TextStyle(color: textDark, fontWeight: FontWeight.w600),
                       ),
                       Text(
                         '$liveEcoScore',
                         style: const TextStyle(
-                          color: vibrantGreen,
+                          color: primaryGreen,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
@@ -432,9 +440,9 @@ class AddProductScreenState extends ConsumerState<AddProductScreen> {
                   height: 56,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: vibrantGreen,
+                      backgroundColor: primaryGreen,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
                     onPressed: saveState.isSaving ? null : handleSave,
                     child: saveState.isSaving
