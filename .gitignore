@@ -12,10 +12,6 @@
 .swiftpm/
 migrate_working_dir/
 .env
-.supabase_config.dart
-
-.supabase_enable_rls.sql
-.supabase_vendor_migration.sql
 
 # IntelliJ related
 *.iml
