@@ -1,4 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../core/providers/auth_providers.dart';
+import '../admin/screens/admin_home_screen.dart';
+import '../vendor/screens/vendor_home_screen.dart';
+import '../vendor/screens/vendor_pending_screen.dart';
+import '../vendor/screens/vendor_rejected_screen.dart';
+import '../user/screens/user_home_shell.dart';
+import '../user/screens/profile_setup_screen.dart';
+import '../user/screens/onboarding_screen.dart';
 import '../user/screens/sign_in_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -10,7 +19,6 @@ class SplashScreen extends StatefulWidget {
 
 class SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
-  // Updated Color Palette
   static const Color pureWhite = Colors.white;
   static const Color textDark = Color(0xFF1A1A1A);
   static const Color textGray = Color(0xFF6B6B6B);
@@ -21,6 +29,7 @@ class SplashScreenState extends State<SplashScreen>
 
   late List<AnimationController> leafControllers;
   late List<Animation<double>> leafAnimations;
+  bool isNavigating = false;
 
   final List<LeafConfig> leafConfigs = const [
     LeafConfig(top: 40, left: 20, size: 42, duration: 3200, delay: 0),
@@ -43,7 +52,6 @@ class SplashScreenState extends State<SplashScreen>
         )
         .toList();
 
-    // Bigger float range: -40 to 40 instead of -10 to 10, full top-bottom drift
     leafAnimations = leafControllers
         .map(
           (controller) => Tween<double>(begin: -40, end: 40).animate(
@@ -57,6 +65,13 @@ class SplashScreenState extends State<SplashScreen>
         if (mounted) leafControllers[i].forward();
       });
     }
+
+    // Attempt automatic session check after splash animation plays
+    Future.delayed(const Duration(milliseconds: 1800), () {
+      if (mounted && !isNavigating) {
+        checkSessionAndNavigate(auto: true);
+      }
+    });
   }
 
   @override
@@ -65,6 +80,126 @@ class SplashScreenState extends State<SplashScreen>
       controller.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> checkSessionAndNavigate({bool auto = false}) async {
+    final session = Supabase.instance.client.auth.currentSession;
+    final user = session?.user;
+
+    // If auto-check and no user, stay on splash screen so user can click "Get Started"
+    if (user == null) {
+      if (!auto && mounted) {
+        isNavigating = true;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const SignInScreen()),
+        );
+      }
+      return;
+    }
+
+    isNavigating = true;
+
+    try {
+      final email = user.email?.toLowerCase();
+      if (email == AdminIdentity.email.toLowerCase()) {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminHomeScreen()),
+          );
+        }
+        return;
+      }
+
+      final profile = await Supabase.instance.client
+          .from('profiles')
+          .select('role, vendor_status, rejection_reason, profile_completed, onboarding_completed')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (!mounted) return;
+
+      if (profile == null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfileSetupScreen()),
+        );
+        return;
+      }
+
+      var role = profile['role'] as String? ?? 'user';
+      var status = profile['vendor_status'] as String? ?? 'none';
+      var reason = profile['rejection_reason'] as String?;
+
+      if (role != 'vendor' && role != 'admin') {
+        final appRows = await Supabase.instance.client
+            .from('vendor_applications')
+            .select('status, rejection_reason')
+            .eq('user_id', user.id)
+            .order('created_at', ascending: false)
+            .limit(1);
+        final appList = appRows as List<dynamic>;
+        if (appList.isNotEmpty) {
+          final app = appList.first as Map<String, dynamic>;
+          role = 'vendor';
+          status = app['status'] as String? ?? 'pending';
+          reason = app['rejection_reason'] as String?;
+        }
+      }
+
+      if (!mounted) return;
+
+      if (role == 'admin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminHomeScreen()),
+        );
+      } else if (role == 'vendor') {
+        if (status == 'approved') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const VendorHomeScreen()),
+          );
+        } else if (status == 'rejected') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => VendorRejectedScreen(rejectionReason: reason)),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const VendorPendingScreen()),
+          );
+        }
+      } else {
+        final profileCompleted = profile['profile_completed'] as bool? ?? false;
+        final onboardingCompleted = profile['onboarding_completed'] as bool? ?? false;
+        if (!profileCompleted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const ProfileSetupScreen()),
+          );
+        } else if (!onboardingCompleted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const UserHomeShell()),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const SignInScreen()),
+        );
+      }
+    }
   }
 
   Widget buildFloatingLeaf(int index) {
@@ -113,7 +248,7 @@ class SplashScreenState extends State<SplashScreen>
         child: Image.asset(
           'assets/logo.png',
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Center(
+          errorBuilder: (context, error, stackTrace) => const Center(
             child: Icon(
               Icons.eco_rounded,
               size: 64,
@@ -147,7 +282,7 @@ class SplashScreenState extends State<SplashScreen>
                     children: [
                       buildLogo(),
                       const SizedBox(height: 20),
-                      Text(
+                      const Text(
                         'EcoWise',
                         style: TextStyle(
                           fontSize: 34,
@@ -157,7 +292,7 @@ class SplashScreenState extends State<SplashScreen>
                         ),
                       ),
                       const SizedBox(height: 6),
-                      Text(
+                      const Text(
                         'Better Choice, Green Future.',
                         style: TextStyle(
                           fontSize: 14,
@@ -185,14 +320,7 @@ class SplashScreenState extends State<SplashScreen>
                             borderRadius: BorderRadius.circular(28),
                           ),
                         ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SignInScreen(),
-                            ),
-                          );
-                        },
+                        onPressed: () => checkSessionAndNavigate(auto: false),
                         child: const Text(
                           'Get Started',
                           style: TextStyle(

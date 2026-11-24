@@ -7,6 +7,10 @@ import 'user_home_shell.dart';
 import 'profile_setup_screen.dart';
 import 'onboarding_screen.dart';
 import '../../admin/screens/admin_sign_in_screen.dart';
+import '../../vendor/screens/vendor_register_screen.dart';
+import '../../vendor/screens/vendor_home_screen.dart';
+import '../../vendor/screens/vendor_pending_screen.dart';
+import '../../vendor/screens/vendor_rejected_screen.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
   final String? prefillEmail;
@@ -35,6 +39,11 @@ class SignInScreenState extends ConsumerState<SignInScreen> {
   void initState() {
     super.initState();
     emailController = TextEditingController(text: widget.prefillEmail ?? '');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+      }
+    });
   }
 
   @override
@@ -101,33 +110,61 @@ class SignInScreenState extends ConsumerState<SignInScreen> {
 
       final userId = Supabase.instance.client.auth.currentUser?.id;
 
-      // profile_completed (not "does a row exist") is the real signal —
-      // signUp already creates a stub profiles row for the Users count,
-      // so row-existence alone would skip setup on every first sign-in.
       var profileCompleted = false;
       var onboardingCompleted = false;
+      String role = 'user';
+      String vendorStatus = 'none';
+      String? rejectionReason;
+
       if (userId != null) {
         final row = await Supabase.instance.client
             .from('profiles')
-            .select('profile_completed, onboarding_completed')
+            .select('role, vendor_status, rejection_reason, profile_completed, onboarding_completed')
             .eq('id', userId)
             .maybeSingle();
         profileCompleted = row?['profile_completed'] as bool? ?? false;
         onboardingCompleted = row?['onboarding_completed'] as bool? ?? false;
+        role = row?['role'] as String? ?? 'user';
+        vendorStatus = row?['vendor_status'] as String? ?? 'none';
+        rejectionReason = row?['rejection_reason'] as String?;
+
+        // Fallback: If profile role is 'user', check if an application exists in vendor_applications
+        if (role != 'vendor' && role != 'admin') {
+          final appRows = await Supabase.instance.client
+              .from('vendor_applications')
+              .select('status, rejection_reason')
+              .eq('user_id', userId)
+              .order('created_at', ascending: false)
+              .limit(1);
+          final appList = appRows as List<dynamic>;
+          if (appList.isNotEmpty) {
+            final app = appList.first as Map<String, dynamic>;
+            role = 'vendor';
+            vendorStatus = app['status'] as String? ?? 'pending';
+            rejectionReason = app['rejection_reason'] as String?;
+          }
+        }
       }
 
       if (!mounted) return;
 
-      // Three-tier gate: profile setup first, then onboarding, then
-      // home — each only shown once per user, same pattern as
-      // profile_completed above.
       Widget destination;
-      if (!profileCompleted) {
-        destination = const ProfileSetupScreen();
-      } else if (!onboardingCompleted) {
-        destination = const OnboardingScreen();
+      if (role == 'vendor') {
+        if (vendorStatus == 'approved') {
+          destination = const VendorHomeScreen();
+        } else if (vendorStatus == 'rejected') {
+          destination = VendorRejectedScreen(rejectionReason: rejectionReason);
+        } else {
+          destination = const VendorPendingScreen();
+        }
       } else {
-        destination = const UserHomeShell();
+        if (!profileCompleted) {
+          destination = const ProfileSetupScreen();
+        } else if (!onboardingCompleted) {
+          destination = const OnboardingScreen();
+        } else {
+          destination = const UserHomeShell();
+        }
       }
 
       Navigator.pushReplacement(
@@ -135,8 +172,12 @@ class SignInScreenState extends ConsumerState<SignInScreen> {
         MaterialPageRoute(builder: (context) => destination),
       );
     } else if (authState.errorMessage != null) {
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(authState.errorMessage!)),
+        SnackBar(
+          content: Text(authState.errorMessage!),
+          duration: const Duration(seconds: 4),
+        ),
       );
     }
   }
@@ -337,6 +378,31 @@ class SignInScreenState extends ConsumerState<SignInScreen> {
                       label: const Text(
                         'Login as admin',
                         style: TextStyle(color: textDark, fontWeight: FontWeight.w600, fontSize: 15),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Register as Vendor
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: lightGreenBg,
+                        side: const BorderSide(color: primaryGreen, width: 1.2),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const VendorRegisterScreen()),
+                        );
+                      },
+                      icon: const Icon(Icons.storefront_rounded, color: primaryGreen, size: 21),
+                      label: const Text(
+                        'Register as Vendor / Partner',
+                        style: TextStyle(color: primaryGreen, fontWeight: FontWeight.bold, fontSize: 15),
                       ),
                     ),
                   ),

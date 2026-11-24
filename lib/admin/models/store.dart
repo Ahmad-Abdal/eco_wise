@@ -13,6 +13,10 @@ class Store {
   final double? averageRating; // null until ratings exist
   final int ratingCount;
   final int productCount;
+  final String? vendorId;
+  final bool isApproved;
+  final bool deletionRequested;
+  final String? deletionReason;
 
   const Store({
     required this.id,
@@ -29,6 +33,10 @@ class Store {
     this.averageRating,
     this.ratingCount = 0,
     this.productCount = 0,
+    this.vendorId,
+    this.isApproved = true,
+    this.deletionRequested = false,
+    this.deletionReason,
   });
 
   factory Store.fromMap(Map<String, dynamic> map) => Store(
@@ -46,5 +54,9 @@ class Store {
         averageRating: (map['average_rating'] as num?)?.toDouble(),
         ratingCount: (map['rating_count'] as num?)?.toInt() ?? 0,
         productCount: (map['product_count'] as num?)?.toInt() ?? 0,
+        vendorId: map['vendor_id'] as String?,
+        isApproved: map['is_approved'] as bool? ?? true,
+        deletionRequested: map['deletion_requested'] as bool? ?? false,
+        deletionReason: map['deletion_reason'] as String?,
       );
 }

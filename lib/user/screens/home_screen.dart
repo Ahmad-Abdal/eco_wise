@@ -27,7 +27,50 @@ class UserHomeScreen extends ConsumerWidget {
     'Zero Waste',
   ];
 
-   void openProfileDialog(BuildContext context, WidgetRef ref, UserProfile? profile) {
+    void handleUserLogout(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: pureWhite,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Sign Out?', style: TextStyle(color: textDark, fontWeight: FontWeight.bold)),
+        content: const Text('Are you sure you want to log out of EcoWise?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel', style: TextStyle(color: textGray, fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryGreen,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Log Out', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await Supabase.instance.client.auth.signOut();
+    ref.invalidate(userDisplayNameProvider);
+    ref.invalidate(currentProfileProvider);
+    ref.invalidate(userEcoScoreProvider);
+    ref.invalidate(recommendedProductsProvider);
+    ref.invalidate(unreadCountProvider);
+
+    if (!context.mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const SignInScreen()),
+      (route) => false,
+    );
+  }
+
+  void openProfileDialog(BuildContext context, WidgetRef ref, UserProfile? profile) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -287,18 +330,30 @@ class UserHomeScreen extends ConsumerWidget {
                       ),
                     );
                   }),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   GestureDetector(
                     onTap: () => openProfileDialog(context, ref, profileAsync.value),
                     child: CircleAvatar(
-                      radius: 22,
+                      radius: 20,
                       backgroundColor: Colors.white,
                       backgroundImage: (profileAsync.value?.avatarUrl != null)
                           ? NetworkImage(profileAsync.value!.avatarUrl!)
                           : null,
                       child: profileAsync.value?.avatarUrl == null
-                          ? const Icon(Icons.person, color: primaryGreen, size: 24)
+                          ? const Icon(Icons.person, color: primaryGreen, size: 22)
                           : null,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  GestureDetector(
+                    onTap: () => handleUserLogout(context, ref),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.18),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(Icons.logout_rounded, color: Colors.white, size: 22),
                     ),
                   ),
                 ],

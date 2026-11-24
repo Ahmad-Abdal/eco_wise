@@ -10,6 +10,10 @@ class UserProfile {
   final String? city;
   final String? bio;
   final DateTime? createdAt;
+  final String role; // 'admin' | 'vendor' | 'user'
+  final String vendorStatus; // 'none' | 'pending' | 'approved' | 'rejected'
+  final String? rejectionReason;
+  final String? contactNumber;
 
   const UserProfile({
     required this.id,
@@ -19,16 +23,24 @@ class UserProfile {
     this.city,
     this.bio,
     this.createdAt,
+    this.role = 'user',
+    this.vendorStatus = 'none',
+    this.rejectionReason,
+    this.contactNumber,
   });
 
   factory UserProfile.fromMap(Map<String, dynamic> map) => UserProfile(
         id: map['id'] as String,
-        name: map['name'] as String,
+        name: map['name'] as String? ?? '',
         email: map['email'] as String?,
         avatarUrl: map['avatar_url'] as String?,
         city: map['city'] as String?,
         bio: map['bio'] as String?,
-        createdAt: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null,
+        createdAt: map['created_at'] != null ? DateTime.tryParse(map['created_at'] as String) : null,
+        role: map['role'] as String? ?? 'user',
+        vendorStatus: map['vendor_status'] as String? ?? 'none',
+        rejectionReason: map['rejection_reason'] as String?,
+        contactNumber: map['contact_number'] as String?,
       );
 }
 

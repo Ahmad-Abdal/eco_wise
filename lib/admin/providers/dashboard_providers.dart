@@ -54,7 +54,7 @@ Future<int> countRows(String table) async {
 
 // The admin's display name, pulled from Supabase Auth user metadata
 // (set via `raw_user_meta_data`), not hardcoded anywhere.
-final adminDisplayNameProvider = Provider<String?>((ref) {
+final adminDisplayNameProvider = Provider.autoDispose<String?>((ref) {
   final user = supabase.auth.currentUser;
   final name = user?.userMetadata?['name'] as String?;
   return (name != null && name.trim().isNotEmpty) ? name.trim() : null;
@@ -62,7 +62,7 @@ final adminDisplayNameProvider = Provider<String?>((ref) {
 
 // TODO: `scans` table doesn't exist yet — once it does, this will start
 // returning a real count automatically.
-final dashboardStatsProvider = FutureProvider<DashboardStats>((ref) async {
+final dashboardStatsProvider = FutureProvider.autoDispose<DashboardStats>((ref) async {
   final results = await Future.wait([
     countRows('stores'),
     countRows('products'),
@@ -81,7 +81,7 @@ final dashboardStatsProvider = FutureProvider<DashboardStats>((ref) async {
 // Expects a `products` table with a `store_id` foreign key to `stores`
 // so PostgREST can embed the per-store product count. Returns an empty
 // list (rather than throwing) if `stores` doesn't exist yet.
-final storesOverviewProvider = FutureProvider<List<StoreOverview>>((ref) async {
+final storesOverviewProvider = FutureProvider.autoDispose<List<StoreOverview>>((ref) async {
   try {
     final response =
         await supabase.from('stores').select('name, products(count)');
@@ -105,6 +105,6 @@ final storesOverviewProvider = FutureProvider<List<StoreOverview>>((ref) async {
 // TODO: Create an `activity_log` table (e.g. columns: type, title,
 // subtitle, created_at) and query it here once store/product actions
 // start writing to it. Until then there is nothing to show.
-final recentActivityProvider = FutureProvider<List<ActivityItem>>((ref) async {
+final recentActivityProvider = FutureProvider.autoDispose<List<ActivityItem>>((ref) async {
   return [];
 });

@@ -16,6 +16,9 @@ class AdminStoreDetail {
   final String? website;
   final String? openingHours;
   final String? description;
+  final String? vendorId;
+  final bool deletionRequested;
+  final String? deletionReason;
 
   const AdminStoreDetail({
     required this.id,
@@ -29,6 +32,9 @@ class AdminStoreDetail {
     this.website,
     this.openingHours,
     this.description,
+    this.vendorId,
+    this.deletionRequested = false,
+    this.deletionReason,
   });
 
   factory AdminStoreDetail.fromMap(Map<String, dynamic> map) {
@@ -44,6 +50,9 @@ class AdminStoreDetail {
       website: map['website'] as String?,
       openingHours: map['opening_hours'] as String?,
       description: map['description'] as String?,
+      vendorId: map['vendor_id'] as String?,
+      deletionRequested: map['deletion_requested'] as bool? ?? false,
+      deletionReason: map['deletion_reason'] as String?,
     );
   }
 }
@@ -120,6 +129,15 @@ final adminStoreProductsProvider =
 Future<void> deleteStoreAndProducts(String storeId) async {
   await _supabase.from('products').delete().eq('store_id', storeId);
   await _supabase.from('stores').delete().eq('id', storeId);
+}
+
+/// Rejects a vendor's deletion request and marks the store as active.
+Future<void> declineStoreDeletion(String storeId) async {
+  await _supabase.from('stores').update({
+    'deletion_requested': false,
+    'deletion_reason': null,
+    'deletion_requested_at': null,
+  }).eq('id', storeId);
 }
 
 Future<void> deleteProduct(String productId) async {

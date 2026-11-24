@@ -9,6 +9,7 @@ class StoreModel {
   final String? website;
   final String? openingHours;
   final String? description;
+  final String? vendorId;
 
   const StoreModel({
     required this.name,
@@ -21,6 +22,7 @@ class StoreModel {
     this.website,
     this.openingHours,
     this.description,
+    this.vendorId,
   });
 
   Map<String, dynamic> toMap() {
@@ -35,6 +37,7 @@ class StoreModel {
       'website': website,
       'opening_hours': openingHours,
       'description': description,
+      if (vendorId != null) 'vendor_id': vendorId,
     };
   }
 }
