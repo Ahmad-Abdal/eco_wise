@@ -40,7 +40,7 @@ final nearbyStoresProvider = FutureProvider.autoDispose<List<NearbyStore>>((ref)
   final position = await ref.watch(userPositionProvider.future);
 
   final data = await supabase.from('store_summary').select();
-  final stores = (data as List).map((e) => Store.fromMap(e)).toList();
+  final stores = (data as List).map((e) => Store.fromMap(e)).where((s) => s.isApproved).toList();
 
   final nearby = stores.map((store) {
     double? distanceKm;

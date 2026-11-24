@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/admin_store_management_providers.dart';
+import '../providers/admin_vendor_providers.dart';
+import '../providers/dashboard_providers.dart';
+import '../providers/store_list_providers.dart';
 import 'add_product_screen.dart';
 import 'edit_store_screen.dart';
 import 'manage_products_screen.dart';
@@ -18,14 +21,85 @@ class StoreDetailScreen extends ConsumerWidget {
   static const Color borderGray = Color(0xFFE0E0E0);
   static const Color sectionFill = Color(0xFFF7F8F6);
 
-  void openStoreMenu(BuildContext context) {
+  Future<void> handleApproveDeletion(BuildContext context, WidgetRef ref, String storeId, String storeName) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: pureWhite,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Approve Store Deletion?', style: TextStyle(color: textDark, fontWeight: FontWeight.bold)),
+        content: Text(
+          'Are you sure you want to permanently delete "$storeName" and all of its listed products? This action cannot be undone.',
+          style: const TextStyle(color: textGray, fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: const Text('Cancel', style: TextStyle(color: textGray)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            child: const Text('Delete Store', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        await deleteStoreAndProducts(storeId);
+        ref.invalidate(storeListProvider);
+        ref.invalidate(storeDeletionRequestsProvider);
+        ref.invalidate(dashboardStatsProvider);
+        ref.invalidate(storesOverviewProvider);
+        ref.invalidate(allVendorApplicationsProvider);
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Store "$storeName" has been removed')),
+        );
+        Navigator.pop(context);
+      } catch (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete store: $e'), backgroundColor: Colors.redAccent),
+        );
+      }
+    }
+  }
+
+  Future<void> handleDeclineDeletion(BuildContext context, WidgetRef ref, String storeId) async {
+    try {
+      await declineStoreDeletion(storeId);
+      ref.invalidate(adminStoreDetailProvider(storeId));
+      ref.invalidate(storeListProvider);
+      ref.invalidate(storeDeletionRequestsProvider);
+      ref.invalidate(dashboardStatsProvider);
+      ref.invalidate(allVendorApplicationsProvider);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Store deletion request declined. Store remains active.')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to decline request: $e'), backgroundColor: Colors.redAccent),
+      );
+    }
+  }
+
+  void openStoreMenu(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
       backgroundColor: pureWhite,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) {
+      builder: (sheetCtx) {
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -36,22 +110,30 @@ class StoreDetailScreen extends ConsumerWidget {
                   leading: const Icon(Icons.edit_outlined, color: primaryGreen),
                   title: const Text('Edit store', style: TextStyle(color: textDark, fontWeight: FontWeight.w600)),
                   onTap: () {
-                    Navigator.pop(context);
+                    Navigator.pop(sheetCtx);
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => EditStoreScreen(storeId: storeId)),
-                    );
+                    ).then((_) {
+                      ref.invalidate(adminStoreDetailProvider(storeId));
+                      ref.invalidate(storeListProvider);
+                      ref.invalidate(storeDeletionRequestsProvider);
+                    });
                   },
                 ),
                 ListTile(
                   leading: const Icon(Icons.inventory_2_outlined, color: primaryGreen),
                   title: const Text('Manage products', style: TextStyle(color: textDark, fontWeight: FontWeight.w600)),
                   onTap: () {
-                    Navigator.pop(context);
+                    Navigator.pop(sheetCtx);
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => ManageProductsScreen(storeId: storeId)),
-                    );
+                    ).then((_) {
+                      ref.invalidate(adminStoreProductsProvider(storeId));
+                      ref.invalidate(storeListProvider);
+                      ref.invalidate(dashboardStatsProvider);
+                    });
                   },
                 ),
               ],
@@ -71,20 +153,28 @@ class StoreDetailScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: pureWhite,
       body: SafeArea(
-        child: storeAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator(color: primaryGreen)),
-          error: (error, stack) => const Center(
-            child: Text('Could not load this store.', style: TextStyle(color: textDark)),
-          ),
-          data: (store) {
-            if (store == null) {
-              return const Center(
-                child: Text('This store no longer exists.', style: TextStyle(color: textDark)),
-              );
-            }
+        child: RefreshIndicator(
+          color: primaryGreen,
+          onRefresh: () async {
+            ref.invalidate(adminStoreDetailProvider(storeId));
+            ref.invalidate(adminStoreRatingSummaryProvider(storeId));
+            ref.invalidate(adminStoreProductsProvider(storeId));
+          },
+          child: storeAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator(color: primaryGreen)),
+            error: (error, stack) => const Center(
+              child: Text('Could not load this store.', style: TextStyle(color: textDark)),
+            ),
+            data: (store) {
+              if (store == null) {
+                return const Center(
+                  child: Text('This store no longer exists.', style: TextStyle(color: textDark)),
+                );
+              }
 
-            return ListView(
-              padding: EdgeInsets.zero,
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
               children: [
                 Stack(
                   children: [
@@ -116,7 +206,7 @@ class StoreDetailScreen extends ConsumerWidget {
                       top: 12,
                       right: 12,
                       child: GestureDetector(
-                        onTap: () => openStoreMenu(context),
+                        onTap: () => openStoreMenu(context, ref),
                         child: Container(
                           width: 36,
                           height: 36,
@@ -132,6 +222,71 @@ class StoreDetailScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (store.deletionRequested) ...[
+                        Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 20),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF0F0),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFFFCCCC)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 24),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Vendor Requested Store Removal',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.redAccent,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Reason: "${store.deletionReason ?? 'No reason provided'}"',
+                                style: const TextStyle(color: textDark, fontSize: 13, height: 1.4),
+                              ),
+                              const SizedBox(height: 14),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton.icon(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.redAccent,
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                      icon: const Icon(Icons.delete_outline, color: Colors.white, size: 18),
+                                      label: const Text('Approve & Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                                      onPressed: () => handleApproveDeletion(context, ref, store.id, store.name),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: OutlinedButton(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: textDark,
+                                        side: const BorderSide(color: borderGray),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                      child: const Text('Decline Request', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                      onPressed: () => handleDeclineDeletion(context, ref, store.id),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       Text(store.name, style: const TextStyle(color: textDark, fontSize: 22, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 6),
                       Row(
@@ -176,28 +331,30 @@ class StoreDetailScreen extends ConsumerWidget {
                         const SizedBox(height: 10),
                         Text(store.description!, style: const TextStyle(color: textDark, fontSize: 13, height: 1.4)),
                       ],
-                      const SizedBox(height: 20),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryGreen,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AddProductScreen(storeId: store.id, storeName: store.name),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.add, color: Colors.white),
-                          label: const Text('Add product', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-                        ),
-                      ),
+                      // OLD ADMIN PRODUCT CREATION – DISABLED AFTER VENDOR ROLE IMPLEMENTATION
+                      // Products are now created and managed directly by approved vendors.
+                      // const SizedBox(height: 20),
+                      // SizedBox(
+                      //   width: double.infinity,
+                      //   height: 52,
+                      //   child: ElevatedButton.icon(
+                      //     style: ElevatedButton.styleFrom(
+                      //       backgroundColor: primaryGreen,
+                      //       elevation: 0,
+                      //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      //     ),
+                      //     onPressed: () {
+                      //       Navigator.push(
+                      //         context,
+                      //         MaterialPageRoute(
+                      //           builder: (context) => AddProductScreen(storeId: store.id, storeName: store.name),
+                      //         ),
+                      //       );
+                      //     },
+                      //     icon: const Icon(Icons.add, color: Colors.white),
+                      //     label: const Text('Add product', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                      //   ),
+                      // ),
                       const SizedBox(height: 24),
                       const Text('Products', style: TextStyle(color: textDark, fontWeight: FontWeight.bold, fontSize: 17)),
                       const SizedBox(height: 12),
@@ -307,6 +464,7 @@ class StoreDetailScreen extends ConsumerWidget {
               ],
             );
           },
+          ),
         ),
       ),
     );

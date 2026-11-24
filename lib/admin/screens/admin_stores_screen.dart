@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/admin_vendor_providers.dart';
+import '../providers/dashboard_providers.dart';
 import '../providers/store_list_providers.dart';
 import 'store_detail_screen.dart';
-import 'add_store_screen.dart';
 
 class AdminStoresScreen extends ConsumerWidget {
   const AdminStoresScreen({Key? key}) : super(key: key);
@@ -25,25 +26,40 @@ class AdminStoresScreen extends ConsumerWidget {
         elevation: 0,
         title: const Text('Stores', style: TextStyle(color: textDark, fontWeight: FontWeight.bold)),
         actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 12),
-            decoration: BoxDecoration(
-              color: lightGreenBg,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.add_business_rounded, color: primaryGreen),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AddStoreScreen()),
-              ),
-            ),
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: textDark),
+            tooltip: 'Refresh stores',
+            onPressed: () {
+              ref.invalidate(storeListProvider);
+              ref.invalidate(storeDeletionRequestsProvider);
+              ref.invalidate(dashboardStatsProvider);
+            },
           ),
+          // OLD ADMIN STORE CREATION – DISABLED AFTER VENDOR ROLE IMPLEMENTATION
+          // Stores are now created and managed directly by approved vendors.
+          // Container(
+          //   margin: const EdgeInsets.only(right: 12),
+          //   decoration: BoxDecoration(
+          //     color: lightGreenBg,
+          //     borderRadius: BorderRadius.circular(12),
+          //   ),
+          //   child: IconButton(
+          //     icon: const Icon(Icons.add_business_rounded, color: primaryGreen),
+          //     onPressed: () => Navigator.push(
+          //       context,
+          //       MaterialPageRoute(builder: (context) => const AddStoreScreen()),
+          //     ),
+          //   ),
+          // ),
         ],
       ),
       body: RefreshIndicator(
         color: primaryGreen,
-        onRefresh: () async => ref.invalidate(storeListProvider),
+        onRefresh: () async {
+          ref.invalidate(storeListProvider);
+          ref.invalidate(storeDeletionRequestsProvider);
+          ref.invalidate(dashboardStatsProvider);
+        },
         child: storesAsync.when(
           loading: () => const Center(child: CircularProgressIndicator(color: primaryGreen)),
           error: (error, stack) => ListView(
@@ -78,21 +94,52 @@ class AdminStoresScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Center(
-                    child: Text('Tap + above to add your first store.', style: TextStyle(color: textGray)),
+                    child: Text('Approved vendor stores will appear here.', style: TextStyle(color: textGray)),
                   ),
                 ],
               );
             }
+            final deletionCount = stores.where((s) => s.deletionRequested).length;
             return ListView.builder(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-              itemCount: stores.length,
+              itemCount: stores.length + (deletionCount > 0 ? 1 : 0),
               itemBuilder: (context, index) {
-                final store = stores[index];
+                if (deletionCount > 0 && index == 0) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 14),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF0F0),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFFFCCCC)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 22),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            '$deletionCount store removal request${deletionCount == 1 ? '' : 's'} awaiting Admin review. Tap a flagged store below.',
+                            style: const TextStyle(color: textDark, fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                final store = stores[deletionCount > 0 ? index - 1 : index];
                 return GestureDetector(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => StoreDetailScreen(storeId: store.id)),
-                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => StoreDetailScreen(storeId: store.id)),
+                    ).then((_) {
+                      ref.invalidate(storeListProvider);
+                      ref.invalidate(storeDeletionRequestsProvider);
+                      ref.invalidate(dashboardStatsProvider);
+                      ref.invalidate(allVendorApplicationsProvider);
+                    });
+                  },
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 14),
                     padding: const EdgeInsets.all(12),
@@ -123,8 +170,27 @@ class AdminStoresScreen extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(store.name,
-                                  style: const TextStyle(color: textDark, fontWeight: FontWeight.bold, fontSize: 16)),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(store.name,
+                                        style: const TextStyle(color: textDark, fontWeight: FontWeight.bold, fontSize: 16)),
+                                  ),
+                                  if (store.deletionRequested)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFDE8E8),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                                      ),
+                                      child: const Text(
+                                        'Deletion Requested',
+                                        style: TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                ],
+                              ),
                               const SizedBox(height: 4),
                               Row(
                                 children: [

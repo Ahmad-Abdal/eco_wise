@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/providers/auth_providers.dart';
+import '../../user/screens/sign_in_screen.dart';
+import '../providers/admin_vendor_providers.dart';
 import '../providers/dashboard_providers.dart';
-import 'add_store_screen.dart';
+import '../providers/store_list_providers.dart';
+import 'admin_vendor_requests_screen.dart';
+import 'store_detail_screen.dart';
+// OLD ADMIN STORE CREATION – DISABLED AFTER VENDOR ROLE IMPLEMENTATION
+// import 'add_store_screen.dart';
 
 class AdminDashboardScreen extends ConsumerWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
@@ -36,90 +44,143 @@ class AdminDashboardScreen extends ConsumerWidget {
     }
   }
 
-  void openAddStoreScreen(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const AddStoreScreen()),
-    );
-  }
-
-  void showSelectStoreSheet(BuildContext context, List<StoreOverview> stores) {
-    if (stores.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Add a store first, then add products to it.')),
-      );
-      return;
-    }
-
-    showModalBottomSheet(
+  Future<void> handleAdminLogout(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
       context: context,
-      backgroundColor: pureWhite,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(color: borderGray, borderRadius: BorderRadius.circular(4)),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                const Text(
-                  'Select store',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDark),
-                ),
-                const SizedBox(height: 12),
-                for (final store in stores)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(color: lightGreenBg, borderRadius: BorderRadius.circular(12)),
-                      child: const Icon(Icons.storefront_rounded, color: primaryGreen, size: 20),
-                    ),
-                    title: Text(store.name, style: const TextStyle(color: textDark, fontWeight: FontWeight.w600)),
-                    trailing: const Icon(Icons.chevron_right_rounded, color: textGray),
-                    onTap: () {
-                      Navigator.pop(context);
-                      // TODO: Navigate to the Add product form for
-                      // this store.
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Add product form for ${store.name} goes here')),
-                      );
-                    },
-                  ),
-              ],
-            ),
+      builder: (context) => AlertDialog(
+        backgroundColor: pureWhite,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Sign Out?', style: TextStyle(color: textDark, fontWeight: FontWeight.bold)),
+        content: const Text('Are you sure you want to log out of the admin panel?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel', style: TextStyle(color: textGray, fontWeight: FontWeight.w600)),
           ),
-        );
-      },
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryGreen,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Log Out', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await Supabase.instance.client.auth.signOut();
+    ref.read(adminAuthNotifierProvider.notifier).reset();
+    ref.read(authNotifierProvider.notifier).reset();
+
+    if (!context.mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const SignInScreen()),
+      (route) => false,
     );
   }
+
+  // OLD ADMIN STORE CREATION – DISABLED AFTER VENDOR ROLE IMPLEMENTATION
+  // void openAddStoreScreen(BuildContext context) {
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(builder: (context) => const AddStoreScreen()),
+  //   );
+  // }
+
+  // OLD ADMIN PRODUCT CREATION – DISABLED AFTER VENDOR ROLE IMPLEMENTATION
+  // void showSelectStoreSheet(BuildContext context, List<StoreOverview> stores) {
+  //   if (stores.isEmpty) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(content: Text('Add a store first, then add products to it.')),
+  //     );
+  //     return;
+  //   }
+  //
+  //   showModalBottomSheet(
+  //     context: context,
+  //     backgroundColor: pureWhite,
+  //     shape: const RoundedRectangleBorder(
+  //       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+  //     ),
+  //     builder: (context) {
+  //       return SafeArea(
+  //         child: Padding(
+  //           padding: const EdgeInsets.all(20),
+  //           child: Column(
+  //             mainAxisSize: MainAxisSize.min,
+  //             crossAxisAlignment: CrossAxisAlignment.start,
+  //             children: [
+  //               Center(
+  //                 child: Container(
+  //                   width: 40,
+  //                   height: 4,
+  //                   decoration: BoxDecoration(color: borderGray, borderRadius: BorderRadius.circular(4)),
+  //                 ),
+  //               ),
+  //               const SizedBox(height: 18),
+  //               const Text(
+  //                 'Select store',
+  //                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textDark),
+  //               ),
+  //               const SizedBox(height: 12),
+  //               for (final store in stores)
+  //                 ListTile(
+  //                   contentPadding: EdgeInsets.zero,
+  //                   leading: Container(
+  //                     width: 42,
+  //                     height: 42,
+  //                     decoration: BoxDecoration(color: lightGreenBg, borderRadius: BorderRadius.circular(12)),
+  //                     child: const Icon(Icons.storefront_rounded, color: primaryGreen, size: 20),
+  //                   ),
+  //                   title: Text(store.name, style: const TextStyle(color: textDark, fontWeight: FontWeight.w600)),
+  //                   trailing: const Icon(Icons.chevron_right_rounded, color: textGray),
+  //                   onTap: () {
+  //                     Navigator.pop(context);
+  //                     ScaffoldMessenger.of(context).showSnackBar(
+  //                       SnackBar(content: Text('Add product form for ${store.name} goes here')),
+  //                     );
+  //                   },
+  //                 ),
+  //             ],
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(dashboardStatsProvider);
-    final storesAsync = ref.watch(storesOverviewProvider);
+    // OLD ADMIN STORE CREATION – DISABLED AFTER VENDOR ROLE IMPLEMENTATION
+    // final storesAsync = ref.watch(storesOverviewProvider);
     final activityAsync = ref.watch(recentActivityProvider);
     final adminName = ref.watch(adminDisplayNameProvider);
+    final pendingVendorCount = ref
+        .watch(pendingVendorCountProvider)
+        .maybeWhen(data: (v) => v, orElse: () => 0);
+    final deletionRequests = ref
+        .watch(storeDeletionRequestsProvider)
+        .maybeWhen(data: (v) => v, orElse: () => <dynamic>[]);
+
+    void refreshDashboard() {
+      ref.invalidate(dashboardStatsProvider);
+      ref.invalidate(storesOverviewProvider);
+      ref.invalidate(recentActivityProvider);
+      ref.invalidate(pendingVendorCountProvider);
+      ref.invalidate(storeDeletionRequestsProvider);
+      ref.invalidate(allVendorApplicationsProvider);
+      ref.invalidate(storeListProvider);
+    }
 
     return RefreshIndicator(
       color: primaryGreen,
-      onRefresh: () async {
-        ref.invalidate(dashboardStatsProvider);
-        ref.invalidate(storesOverviewProvider);
-        ref.invalidate(recentActivityProvider);
-      },
+      onRefresh: () async => refreshDashboard(),
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
@@ -160,6 +221,30 @@ class AdminDashboardScreen extends ConsumerWidget {
                             style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.85), fontWeight: FontWeight.w500),
                           ),
                         ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.18),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 22),
+                        tooltip: 'Refresh Data',
+                        onPressed: refreshDashboard,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.18),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.logout_rounded, color: Colors.white, size: 22),
+                        tooltip: 'Log Out',
+                        onPressed: () => handleAdminLogout(context, ref),
                       ),
                     ),
                   ],
@@ -223,31 +308,81 @@ class AdminDashboardScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(
-                      child: buildActionButton(
-                        icon: Icons.add_business_rounded,
-                        label: 'Add store',
-                        filled: true,
-                        onTap: () => openAddStoreScreen(context),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
+                    // OLD ADMIN STORE CREATION – DISABLED AFTER VENDOR ROLE IMPLEMENTATION
                     // Expanded(
                     //   child: buildActionButton(
-                    //     icon: Icons.add_box_outlined,
-                    //     label: 'Add product',
-                    //     filled: false,
-                    //     onTap: () {
-                    //       final stores = storesAsync.maybeWhen(
-                    //         data: (data) => data,
-                    //         orElse: () => <StoreOverview>[],
-                    //       );
-                    //       showSelectStoreSheet(context, stores);
-                    //     },
+                    //     icon: Icons.add_business_rounded,
+                    //     label: 'Add store',
+                    //     filled: true,
+                    //     onTap: () => openAddStoreScreen(context),
                     //   ),
                     // ),
+                    // OLD ADMIN PRODUCT CREATION – DISABLED AFTER VENDOR ROLE IMPLEMENTATION
+                    Expanded(
+                      child: buildActionButton(
+                        icon: Icons.assignment_outlined,
+                        label: pendingVendorCount > 0
+                            ? 'Vendor Applications ($pendingVendorCount)'
+                            : 'Vendor Applications',
+                        filled: true,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const AdminVendorRequestsScreen()),
+                          ).then((_) => refreshDashboard());
+                        },
+                      ),
+                    ),
                   ],
                 ),
+
+                if (deletionRequests.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  ...deletionRequests.map((store) {
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => StoreDetailScreen(storeId: store.id)),
+                        ).then((_) => refreshDashboard());
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF5F5),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFFFCCCC)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 22),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Store Removal Request: ${store.name}',
+                                    style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Reason: "${store.deletionReason ?? 'No reason provided'}" — Tap to review',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(color: textDark, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.chevron_right_rounded, color: Colors.redAccent),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                ],
 
                 const SizedBox(height: 30),
                 const Text('Recent activity', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textDark)),
